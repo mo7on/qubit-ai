@@ -7,26 +7,33 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Article } from "@/types/article"
 import { mockArticles } from "@/data/mock-articles"
 
-export function Articles() {
+interface ArticlesProps {
+  onExpansionChange?: (expanded: boolean) => void
+}
+
+export function Articles({ onExpansionChange }: ArticlesProps) {
   const [expandedArticle, setExpandedArticle] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const handleExpandArticle = (event: CustomEvent<{ articleId: string }>) => {
       setExpandedArticle(event.detail.articleId)
+      onExpansionChange?.(true)
     }
 
     window.addEventListener('expandArticle', handleExpandArticle as EventListener)
     return () => {
       window.removeEventListener('expandArticle', handleExpandArticle as EventListener)
     }
-  }, [])
+  }, [onExpansionChange])
 
   const handleArticleClick = (articleId: string) => {
     setExpandedArticle(articleId)
+    onExpansionChange?.(true)
   }
 
   const handleBackClick = () => {
     setExpandedArticle(null)
+    onExpansionChange?.(false)
   }
 
   return (

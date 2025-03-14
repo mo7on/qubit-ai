@@ -22,50 +22,93 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 
+/** Interface for upload options in the text area component */
 interface UploadOption {
   value: "document" | "photo"
   label: string
 }
 
+/** Interface for the ticket history items */
+interface TicketHistoryItem {
+  id: string
+  timestamp: Date
+  content: string
+}
+
+/**
+ * TextArea Component
+ * 
+ * A responsive chat interface component that provides text input, file upload,
+ * and article search functionality. It adapts its layout based on the current page context
+ * and provides real-time article suggestions as users type.
+ * 
+ * Features:
+ * - Real-time article search
+ * - File upload options
+ * - History view (on articles page)
+ * - Responsive design
+ * 
+ * @component
+ */
 export function TextArea() {
-  const [text, setText] = React.useState<string>("")
-  const [showHistory, setShowHistory] = React.useState(false)
-  const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([])
-  const router = useRouter()
-  const pathname = usePathname()
+  // State management for user input and UI elements
+  const [text, setText] = React.useState<string>("");
+  const [showHistory, setShowHistory] = React.useState(false);
+  const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([]);
+  
+  // Navigation hooks
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const isArticlesPage = pathname === "/articles"
+  // Page context determination
+  const isArticlesPage = pathname === "/articles";
 
+  // Memoized upload options to prevent unnecessary re-renders
   const uploadOptions = React.useMemo<UploadOption[]>(() => [
     { value: "document", label: "Upload Document" },
     { value: "photo", label: "Upload Photo" }
-  ], [])
+  ], []);
 
+  /**
+   * Handles text input changes and updates article suggestions
+   * @param e - Change event from the input element
+   */
   const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setText(value)
+    const value = e.target.value;
+    setText(value);
     
+    // Update matching articles when input length is greater than 2
     if (value.length > 2) {
       const matches = mockArticles.filter(article => 
         article.title.toLowerCase().includes(value.toLowerCase()) ||
         article.description.toLowerCase().includes(value.toLowerCase())
-      )
-      setMatchingArticles(matches)
+      );
+      setMatchingArticles(matches);
     } else {
-      setMatchingArticles([])
+      setMatchingArticles([]);
     }
-  }, [])
+  }, []);
 
+  /**
+   * Handles navigation to the articles page
+   */
   const handleArticlesClick = React.useCallback(() => {
     if (!isArticlesPage) {
-      router.push("/articles")
+      router.push("/articles");
     }
-  }, [isArticlesPage, router])
+  }, [isArticlesPage, router]);
 
   return (
-    <div className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}>
+    <div 
+      className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}
+      role="main"
+    >
       {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
-      <div className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : 'fixed md:static bottom-0 left-0 right-0'}`}>
+      <div 
+        className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : 'fixed md:static bottom-0 left-0 right-0'}`}
+        role="region"
+        aria-label="Chat interface"
+      >
         <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto space-y-4 p-4 md:p-8">
           {!isArticlesPage && (
             <div className="w-full text-center md:static fixed top-8 left-0 right-0 px-4">
@@ -74,7 +117,11 @@ export function TextArea() {
             </div>
           )}
           
-          <div className={`w-full p-4 md:p-6 rounded-2xl ${isArticlesPage ? 'bg-background' : 'bg-muted/20'} border border-border`}>
+          <div 
+            className={`w-full p-4 md:p-6 rounded-2xl ${isArticlesPage ? 'bg-background' : 'bg-muted/20'} border border-border`}
+            role="form"
+            aria-label="Message input form"
+          >
             <div className="flex items-center gap-2 md:gap-4">
               {isArticlesPage && (
                 <Popover>
@@ -82,17 +129,19 @@ export function TextArea() {
                     <button
                       className="history-button p-2 hover:bg-accent rounded-full transition-colors"
                       aria-label="Toggle history"
+                      aria-expanded={showHistory}
                     >
-                      <History className="w-5 h-5" />
+                      <History className="w-5 h-5" aria-hidden="true" />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80" align="start">
                     <ScrollArea className="h-[300px] w-full">
-                      <div className="space-y-4">
+                      <div className="space-y-4" role="list" aria-label="Chat history">
                         {mockTickets.map((ticket) => (
                           <div
                             key={ticket.id}
                             className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                            role="listitem"
                           >
                             <p className="text-sm text-muted-foreground">
                               {ticket.timestamp.toLocaleString()}
@@ -111,7 +160,7 @@ export function TextArea() {
                   className="articles-button p-2 hover:bg-accent rounded-full transition-colors"
                   aria-label="Go to articles"
                 >
-                  <ScrollText className="w-5 h-5" />
+                  <ScrollText className="w-5 h-5" aria-hidden="true" />
                 </button>
               )}
 
@@ -119,7 +168,7 @@ export function TextArea() {
                 className="photo-upload-button p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label="Upload image"
               >
-                <Paperclip className="w-5 h-5" />
+                <Paperclip className="w-5 h-5" aria-hidden="true" />
               </button>
 
               <div className="flex-1 relative textbar-container">
@@ -130,24 +179,24 @@ export function TextArea() {
                   placeholder="Type your message here..."
                   className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Message input"
+                  role="textbox"
+                  aria-expanded={matchingArticles.length > 0}
                 />
                 {matchingArticles.length > 0 && (
-                  <div className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg">
+                  <div 
+                    className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg"
+                    role="listbox"
+                    aria-label="Matching articles"
+                  >
                     <ScrollArea className="max-h-[200px]">
                       <div className="p-2 space-y-2">
                         {matchingArticles.map((article) => (
                           <div
                             key={article.id}
-                            onClick={() => {
-                              router.push("/articles")
-                              setTimeout(() => {
-                                const articleEvent = new CustomEvent("expandArticle", {
-                                  detail: { articleId: article.id }
-                                })
-                                window.dispatchEvent(articleEvent)
-                              }, 100)
-                            }}
+                            onClick={() => {}}
                             className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+                            role="option"
+                            aria-selected="false"
                           >
                             <h3 className="font-medium">{article.title}</h3>
                             <p className="text-sm text-muted-foreground line-clamp-1">
@@ -164,9 +213,9 @@ export function TextArea() {
                   aria-label={text ? "Send message" : "Take photo"}
                 >
                   {text ? (
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-4 h-4" aria-hidden="true" />
                   )}
                 </button>
               </div>

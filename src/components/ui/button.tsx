@@ -4,6 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/** Interface for button variants and their corresponding styles */
+interface ButtonStyleVariants {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+}
+
+/**
+ * Button variant styles using class-variance-authority
+ * Provides consistent styling across different button variants and sizes
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
@@ -34,16 +44,38 @@ const buttonVariants = cva(
   }
 )
 
+/** Interface for Button component props */
+interface ButtonProps extends React.ComponentProps<"button">, VariantProps<typeof buttonVariants> {
+  /** If true, the component will be rendered as a child component */
+  asChild?: boolean
+}
+
+/**
+ * Button Component
+ * 
+ * A flexible button component that supports various styles and sizes.
+ * Built with accessibility in mind and supports keyboard navigation.
+ * 
+ * @param props - The button props including variant, size, and other HTML button attributes
+ * @param props.className - Additional CSS classes to apply
+ * @param props.variant - The visual style variant of the button
+ * @param props.size - The size variant of the button
+ * @param props.asChild - If true, renders the component as a child component
+ * 
+ * @example
+ * ```tsx
+ * <Button variant="primary" size="lg">
+ *   Click me
+ * </Button>
+ * ```
+ */
 function Button({
   className,
   variant,
   size,
   asChild = false,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+}: ButtonProps) {
   const Comp = asChild ? Slot : "button"
 
   return (
@@ -55,4 +87,4 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants, type ButtonProps, type ButtonStyleVariants }
