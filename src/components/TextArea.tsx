@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, FileText, ScrollText, History } from "lucide-react"
+import { Camera, Send, Paperclip, ScrollText, History } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
+import { IntroTour } from "@/components/IntroTour"
+import { ArticlesTour } from "@/components/ArticlesTour"
 import {
   Popover,
   PopoverContent,
@@ -49,6 +51,7 @@ export function TextArea() {
 
   return (
     <div className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}>
+      {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
       <div className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : 'fixed md:static bottom-0 left-0 right-0'}`}>
         <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto space-y-4 p-4 md:p-8">
           {!isArticlesPage && (
@@ -64,7 +67,7 @@ export function TextArea() {
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
-                      className="p-2 hover:bg-accent rounded-full transition-colors"
+                      className="history-button p-2 hover:bg-accent rounded-full transition-colors"
                       aria-label="Toggle history"
                     >
                       <History className="w-5 h-5" />
@@ -92,32 +95,21 @@ export function TextArea() {
               {!isArticlesPage && (
                 <button
                   onClick={handleArticlesClick}
-                  className="p-2 hover:bg-accent rounded-full transition-colors"
+                  className="articles-button p-2 hover:bg-accent rounded-full transition-colors"
                   aria-label="Go to articles"
                 >
                   <ScrollText className="w-5 h-5" />
                 </button>
               )}
 
-              <Select>
-                <SelectTrigger 
-                  className="w-10 h-10 p-2 rounded-full border-none hover:bg-accent"
-                  aria-label="Upload options"
-                >
-                  <FileText className="w-5 h-5" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {uploadOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <button
+                className="photo-upload-button p-2 hover:bg-accent rounded-full transition-colors"
+                aria-label="Upload image"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
 
-              <div className="flex-1 relative">
+              <div className="flex-1 relative textbar-container">
                 <input
                   type="text"
                   value={text}
