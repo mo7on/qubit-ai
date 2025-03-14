@@ -48,14 +48,14 @@ export function TextArea() {
   }, [isArticlesPage, router])
 
   return (
-    <div className={`flex flex-col min-h-screen ${isArticlesPage ? '' : 'items-center justify-center'}`}>
-      <div className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : ''}`}>
+    <div className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}>
+      <div className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : 'fixed md:static bottom-0 left-0 right-0'}`}>
         <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto space-y-4 p-4 md:p-8">
           {!isArticlesPage && (
-            <>
+            <div className="w-full text-center md:static fixed top-8 left-0 right-0 px-4">
               <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
               <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
-            </>
+            </div>
           )}
           
           <div className="w-full p-4 md:p-6 rounded-2xl bg-muted/20 border border-border">
