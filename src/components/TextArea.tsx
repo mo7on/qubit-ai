@@ -1,8 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, FileText, ScrollText } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Camera, Send, FileText, ScrollText, History } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { mockTickets } from "@/lib/mock-tickets"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 import {
   Select,
@@ -17,65 +24,81 @@ interface UploadOption {
   label: string
 }
 
-/**
- * TextArea Component
- * 
- * A primary user interaction component that provides a chat-like interface with multiple functionalities.
- * 
- * Features:
- * - Text input for messaging with dynamic send/camera button
- * - File/photo upload options via Select dropdown
- * - Quick access to articles section
- * 
- * Accessibility:
- * - All interactive elements have proper ARIA labels
- * - Semantic HTML structure
- * - Keyboard navigation support
- * 
- * @component
- */
 export function TextArea() {
-  // State management for user input text
   const [text, setText] = React.useState<string>("")
+  const [showHistory, setShowHistory] = React.useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
-  // Memoized upload options to prevent unnecessary re-renders
+  const isArticlesPage = pathname === "/articles"
+
   const uploadOptions = React.useMemo<UploadOption[]>(() => [
     { value: "document", label: "Upload Document" },
     { value: "photo", label: "Upload Photo" }
   ], [])
 
-  // Handler for text input changes
   const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value)
   }, [])
 
-  // Handler for articles navigation
   const handleArticlesClick = React.useCallback(() => {
-    router.push("/articles")
-  }, [router])
+    if (!isArticlesPage) {
+      router.push("/articles")
+    }
+  }, [isArticlesPage, router])
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen">
-      <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto w-full md:flex md:flex-1 md:items-center">
+    <div className={`flex flex-col min-h-screen ${isArticlesPage ? '' : 'items-center justify-center'}`}>
+      <div className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : ''}`}>
         <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto space-y-4 p-4 md:p-8">
-          {/* Main heading section - visible on all screen sizes */}
-          <h1 className="text-2xl md:text-4xl font-bold text-primary fixed top-14 left-0 right-0 text-center md:static">Welcome to Qub-IT!</h1>
-          <h2 className="text-lg md:text-xl text-muted-foreground mb-4 md:mb-8 fixed top-24 left-0 right-0 text-center md:static">The first ever IT Assistant AI chatbot.</h2>
+          {!isArticlesPage && (
+            <>
+              <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
+              <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
+            </>
+          )}
           
-          {/* Interactive chat interface container */}
           <div className="w-full p-4 md:p-6 rounded-2xl bg-muted/20 border border-border">
             <div className="flex items-center gap-2 md:gap-4">
-              {/* Articles navigation button */}
-              <button
-                onClick={handleArticlesClick}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-                aria-label="Go to articles"
-              >
-                <ScrollText className="w-5 h-5" />
-              </button>
+              {isArticlesPage && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="p-2 hover:bg-accent rounded-full transition-colors"
+                      aria-label="Toggle history"
+                    >
+                      <History className="w-5 h-5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="start">
+                    <ScrollArea className="h-[300px] w-full">
+                      <div className="space-y-4">
+                        {mockTickets.map((ticket) => (
+                          <div
+                            key={ticket.id}
+                            className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                          >
+                            <p className="text-sm text-muted-foreground">
+                              {ticket.timestamp.toLocaleString()}
+                            </p>
+                            <p className="mt-1">{ticket.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+              )}
+              {!isArticlesPage && (
+                <button
+                  onClick={handleArticlesClick}
+                  className="p-2 hover:bg-accent rounded-full transition-colors"
+                  aria-label="Go to articles"
+                >
+                  <ScrollText className="w-5 h-5" />
+                </button>
+              )}
 
-              {/* File upload select dropdown */}
               <Select>
                 <SelectTrigger 
                   className="w-10 h-10 p-2 rounded-full border-none hover:bg-accent"
@@ -94,21 +117,24 @@ export function TextArea() {
                 </SelectContent>
               </Select>
 
-              {/* Main input field with dynamic send/camera button */}
               <div className="flex-1 relative">
                 <input
                   type="text"
                   value={text}
                   onChange={handleTextChange}
-                  placeholder="Message Copilot"
-                  className="w-full px-4 py-2 rounded-full bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Type your message here..."
+                  className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Message input"
                 />
-                <button 
+                <button
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors"
                   aria-label={text ? "Send message" : "Take photo"}
                 >
-                  {text ? <Send className="w-5 h-5" /> : <Camera className="w-5 h-5" />}
+                  {text ? (
+                    <Send className="w-4 h-4" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
