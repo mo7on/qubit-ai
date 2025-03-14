@@ -5,6 +5,7 @@ import { Camera, Send, Paperclip, ScrollText, History } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
+import { mockArticles } from "@/data/mock-articles"
 import { IntroTour } from "@/components/IntroTour"
 import { ArticlesTour } from "@/components/ArticlesTour"
 import {
@@ -29,6 +30,7 @@ interface UploadOption {
 export function TextArea() {
   const [text, setText] = React.useState<string>("")
   const [showHistory, setShowHistory] = React.useState(false)
+  const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([])
   const router = useRouter()
   const pathname = usePathname()
 
@@ -40,7 +42,18 @@ export function TextArea() {
   ], [])
 
   const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setText(e.target.value)
+    const value = e.target.value
+    setText(value)
+    
+    if (value.length > 2) {
+      const matches = mockArticles.filter(article => 
+        article.title.toLowerCase().includes(value.toLowerCase()) ||
+        article.description.toLowerCase().includes(value.toLowerCase())
+      )
+      setMatchingArticles(matches)
+    } else {
+      setMatchingArticles([])
+    }
   }, [])
 
   const handleArticlesClick = React.useCallback(() => {
@@ -61,7 +74,7 @@ export function TextArea() {
             </div>
           )}
           
-          <div className="w-full p-4 md:p-6 rounded-2xl bg-muted/20 border border-border">
+          <div className={`w-full p-4 md:p-6 rounded-2xl ${isArticlesPage ? 'bg-background' : 'bg-muted/20'} border border-border`}>
             <div className="flex items-center gap-2 md:gap-4">
               {isArticlesPage && (
                 <Popover>
@@ -118,6 +131,34 @@ export function TextArea() {
                   className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Message input"
                 />
+                {matchingArticles.length > 0 && (
+                  <div className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg">
+                    <ScrollArea className="max-h-[200px]">
+                      <div className="p-2 space-y-2">
+                        {matchingArticles.map((article) => (
+                          <div
+                            key={article.id}
+                            onClick={() => {
+                              router.push("/articles")
+                              setTimeout(() => {
+                                const articleEvent = new CustomEvent("expandArticle", {
+                                  detail: { articleId: article.id }
+                                })
+                                window.dispatchEvent(articleEvent)
+                              }, 100)
+                            }}
+                            className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+                          >
+                            <h3 className="font-medium">{article.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {article.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
                 <button
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors"
                   aria-label={text ? "Send message" : "Take photo"}
