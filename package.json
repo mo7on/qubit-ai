@@ -1,23 +1,36 @@
 {
   "name": "qubit-ai",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Real-time problem-solving application using Gemini API",
+  "main": "src/backend/server.js",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "server": "node src/backend/server.js",
+    "server:dev": "nodemon src/backend/server.js"
   },
+  "private": true,
   "dependencies": {
+    "@google/generative-ai": "^0.2.0",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-popover": "^1.1.6",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
+    "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.479.0",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
     "next": "15.2.2",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
@@ -34,7 +47,20 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
+    "nodemon": "^3.0.2",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mo7on/qubit-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mo7on/qubit-ai/issues"
+  },
+  "homepage": "https://github.com/mo7on/qubit-ai#readme"
 }
