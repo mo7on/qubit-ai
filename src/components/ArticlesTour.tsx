@@ -10,6 +10,7 @@ export function ArticlesTour() {
     const hasSeenArticlesTour = localStorage.getItem("hasSeenArticlesTour")
     if (!hasSeenArticlesTour) {
       setRun(true)
+      localStorage.setItem("hasSeenArticlesTour", "true")
     }
   }, [])
 

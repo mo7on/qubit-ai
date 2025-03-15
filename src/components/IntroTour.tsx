@@ -7,9 +7,11 @@ export function IntroTour() {
   const [run, setRun] = useState(false)
 
   useEffect(() => {
+    // Move localStorage check to useEffect without conditional
     const hasSeenTour = localStorage.getItem("hasSeenTour")
     if (!hasSeenTour) {
       setRun(true)
+      localStorage.setItem("hasSeenTour", "true")
     }
   }, [])
 
