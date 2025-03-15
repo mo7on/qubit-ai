@@ -3,6 +3,7 @@
 import * as React from "react"
 import { User } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +45,13 @@ interface SystemInfo {
  */
 export function ProfileMenu() {
   const [systemInfo, setSystemInfo] = React.useState<SystemInfo>(mockSystemInfo)
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false)
+  const router = useRouter()
+
+  React.useEffect(() => {
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('isAuthenticated='))
+    setIsAuthenticated(!!cookie)
+  }, [])
 
   /**
    * Handles language selection change
@@ -56,15 +64,27 @@ export function ProfileMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-2" 
-          aria-label="Open profile menu"
-          aria-haspopup="true"
-        >
-          <span>Login</span>
-          <User className="h-[1.2rem] w-[1.2rem]" aria-hidden="true" />
-        </Button>
+        {!isAuthenticated ? (
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2" 
+            aria-label="Open profile menu"
+            aria-haspopup="true"
+          >
+            <span>Login</span>
+            <User className="h-[1.2rem] w-[1.2rem]" aria-hidden="true" />
+          </Button>
+        ) : (
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2" 
+            aria-label="Open profile menu"
+            aria-haspopup="true"
+          >
+            <span>Profile</span>
+            <User className="h-[1.2rem] w-[1.2rem]" aria-hidden="true" />
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
@@ -72,9 +92,27 @@ export function ProfileMenu() {
         role="menu"
         aria-label="Profile options"
       >
-        <DropdownMenuItem className="cursor-pointer" role="menuitem">
-          Login
-        </DropdownMenuItem>
+        {!isAuthenticated ? (
+          <DropdownMenuItem 
+            className="cursor-pointer" 
+            role="menuitem"
+            onClick={() => router.push('/login')}
+          >
+            Login
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem 
+            className="cursor-pointer" 
+            role="menuitem"
+            onClick={() => {
+              document.cookie = 'isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+              setIsAuthenticated(false);
+              router.push('/');
+            }}
+          >
+            Logout
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuLabel>System Information</DropdownMenuLabel>
         <DropdownMenuSeparator />
