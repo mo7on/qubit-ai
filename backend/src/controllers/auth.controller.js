@@ -56,6 +56,10 @@ exports.signup = async (req, res) => {
 };
 
 // Login user
+// Add this at the top with other imports
+const HistoryService = require('../services/history.service');
+
+// Modify the login function to log activity
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -86,6 +90,17 @@ exports.login = async (req, res) => {
       { expiresIn: '24h' }
     );
     
+    // Log login activity
+    await HistoryService.logActivity({
+      userId: user.id,
+      action: 'LOGIN',
+      entityType: 'USER',
+      entityId: user.id,
+      details: { method: 'credentials' },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
     res.status(200).json({
       message: 'Login successful',
       user: {
@@ -99,6 +114,26 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Error during login', error: error.message });
+  }
+};
+
+// Add a new function to get user history
+exports.getUserHistory = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { limit, offset, action, entityType } = req.query;
+    
+    const history = await HistoryService.getUserHistory(userId, {
+      limit: parseInt(limit) || 50,
+      offset: parseInt(offset) || 0,
+      action,
+      entityType
+    });
+    
+    res.status(200).json(history);
+  } catch (error) {
+    console.error('Get user history error:', error);
+    res.status(500).json({ message: 'Error fetching user history', error: error.message });
   }
 };
 

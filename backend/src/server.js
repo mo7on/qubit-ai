@@ -8,6 +8,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const { testConnection } = require('./config/db.config');
 const errorHandler = require('./middleware/error.middleware');
+const { apiLimiter, authLimiter } = require('./middleware/rate-limit.middleware');
 
 // Load environment variables
 dotenv.config();
@@ -75,3 +76,7 @@ process.on('unhandledRejection', (err) => {
     process.exit(1);
   });
 });
+
+// Apply rate limiting to routes
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
