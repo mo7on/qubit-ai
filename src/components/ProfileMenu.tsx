@@ -120,8 +120,8 @@ export function ProfileMenu() {
         role="menu"
         aria-label="Profile options"
         onInteractOutside={(e) => {
-          // Prevent closing the menu if a popover is open
-          if (isNameOpen || isDeviceOpen) {
+          // Prevent closing the menu if any popover is open
+          if (isNameOpen || isDeviceOpen || isThemeOpen) {
             e.preventDefault()
           }
         }}
