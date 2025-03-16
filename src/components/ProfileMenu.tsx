@@ -97,8 +97,12 @@ export function ProfileMenu() {
     setSystemInfo(prev => ({ ...prev, language: value }))
   }, [])
 
+  // Add this new function to handle dropdown menu state
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
+
+  // Modify the return statement
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
@@ -115,6 +119,12 @@ export function ProfileMenu() {
         className="w-[240px]"
         role="menu"
         aria-label="Profile options"
+        onInteractOutside={(e) => {
+          // Prevent closing the menu if a popover is open
+          if (isNameOpen || isDeviceOpen) {
+            e.preventDefault()
+          }
+        }}
       >
         {!isAuthenticated ? (
           <div className="text-center px-2 py-3">
@@ -195,9 +205,10 @@ export function ProfileMenu() {
                   </Button>
                   <Button
                     onClick={() => {
-                      setNameInfo({ firstName: tempNameInfo.firstName })
-                      setTempNameInfo(nameInfo)
-                      setIsNameOpen(false)
+                      if (tempNameInfo.firstName.trim()) {
+                        setNameInfo({ firstName: tempNameInfo.firstName })
+                        setIsNameOpen(false)
+                      }
                     }}
                   >
                     Save
@@ -212,8 +223,8 @@ export function ProfileMenu() {
               <PopoverTrigger asChild>
                 <div className="text-sm font-medium text-right">
                   <div className="truncate max-w-[140px]">
-                    {deviceInfo.manufacturer && deviceInfo.model ? 
-                      `${deviceInfo.manufacturer.split(' ')[0]} ${deviceInfo.model}` : 
+                    {deviceInfo.manufacturer || deviceInfo.model ? 
+                      `${deviceInfo.manufacturer || ''} ${deviceInfo.model || ''}`.trim() : 
                       '-'
                     }
                   </div>
@@ -264,13 +275,14 @@ export function ProfileMenu() {
                   </Button>
                   <Button
                     onClick={() => {
-                      setDeviceInfo({
-                        manufacturer: tempDeviceInfo.manufacturer,
-                        model: tempDeviceInfo.model,
-                        language: systemInfo.language
-                      })
-                      setTempDeviceInfo(deviceInfo)
-                      setIsDeviceOpen(false)
+                      if (tempDeviceInfo.manufacturer.trim() || tempDeviceInfo.model.trim()) {
+                        setDeviceInfo({
+                          manufacturer: tempDeviceInfo.manufacturer,
+                          model: tempDeviceInfo.model,
+                          language: systemInfo.language
+                        })
+                        setIsDeviceOpen(false)
+                      }
                     }}
                   >
                     Save
@@ -332,7 +344,7 @@ export function ProfileMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <div className="p-2 flex justify-between text-sm">
+        <div className="p-2 flex justify-center gap-3 text-xs">
           <a href="/privacy" className="hover:underline">Privacy</a>
           <a href="/terms" className="hover:underline">Terms</a>
           <a href="/faq" className="hover:underline">FAQ</a>
