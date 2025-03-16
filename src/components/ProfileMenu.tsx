@@ -74,6 +74,7 @@ export function ProfileMenu() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false)
   const [isDeviceOpen, setIsDeviceOpen] = React.useState(false)
   const [isNameOpen, setIsNameOpen] = React.useState(false)
+  const [isThemeOpen, setIsThemeOpen] = React.useState(false)
   
   // Hooks
   const router = useRouter()
@@ -156,7 +157,13 @@ export function ProfileMenu() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setIsNameOpen(false)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event bubbling
+                      setIsNameOpen(false);
+                      // Reset temp state to match current state
+                      setTempNameInfo({ firstName: nameInfo.firstName });
+                    }}
+                    aria-label="Go back"
                   >
                     ←
                   </Button>
@@ -217,7 +224,13 @@ export function ProfileMenu() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setIsDeviceOpen(false)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event bubbling
+                      setIsDeviceOpen(false);
+                      // Reset temp state to match current state
+                      setTempDeviceInfo(deviceInfo);
+                    }}
+                    aria-label="Go back"
                   >
                     ←
                   </Button>
@@ -266,18 +279,53 @@ export function ProfileMenu() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200">
+          <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200" onClick={() => setIsThemeOpen(true)}>
             <span className="text-sm">Theme</span>
-            <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger className="w-[100px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover open={isThemeOpen} onOpenChange={setIsThemeOpen}>
+              <PopoverTrigger asChild>
+                <div className="text-sm font-medium text-right">
+                  <div className="truncate max-w-[140px]">
+                    {theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}
+                  </div>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-2" align="end">
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => {
+                      setTheme('light');
+                      setIsThemeOpen(false);
+                    }}
+                  >
+                    Light
+                  </Button>
+                  <Button
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => {
+                      setTheme('dark');
+                      setIsThemeOpen(false);
+                    }}
+                  >
+                    Dark
+                  </Button>
+                </div>
+                <div className="mt-2">
+                  <Button
+                    variant={theme === 'system' ? 'default' : 'outline'}
+                    className="w-full"
+                    onClick={() => {
+                      setTheme('system');
+                      setIsThemeOpen(false);
+                    }}
+                  >
+                    System
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200">
             <span className="text-sm">About</span>
