@@ -120,16 +120,21 @@ export function TextArea() {
         body: JSON.stringify({ prompt: text }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to get response from Gemini');
+        throw new Error(data.error || 'Failed to get response from Gemini');
       }
 
-      const data = await response.json();
       const assistantMessage = { role: 'assistant', content: data.data };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      // You might want to show an error toast here
+      // Add a user-friendly error message to the chat
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error processing your request. Please try again later.' 
+      }]);
     } finally {
       setIsLoading(false);
     }
