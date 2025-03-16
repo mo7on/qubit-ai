@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, Paperclip, ScrollText, History, User, Bot } from "lucide-react"
+import { Camera, Send, Paperclip, ScrollText, History, User, Bot, X } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
@@ -21,6 +21,15 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
+
+import { CameraCapture } from "@/components/CameraCapture"
+
+// Remove the temporary interface since we now have the actual component
+// Delete these lines:
+// interface CameraCapture {
+//   onCapture: (imageSrc: string) => void;
+//   onCancel: () => void;
+// }
 
 /** Interface for upload options in the text area component */
 interface UploadOption {
@@ -58,6 +67,13 @@ export function TextArea() {
   const [messages, setMessages] = React.useState<{role: string; content: string}[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [conversationStarted, setConversationStarted] = React.useState(false);
+  
+  // Add new state for camera and file upload
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+  const [imagePromptOpen, setImagePromptOpen] = React.useState(false);
+  const [pendingImage, setPendingImage] = React.useState<string | null>(null);
+  const [imagePrompt, setImagePrompt] = React.useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Navigation hooks
   const router = useRouter();
@@ -157,12 +173,202 @@ export function TextArea() {
     }
   }, [text, isLoading, conversationStarted]);
 
+  /**
+   * Handles opening the camera
+   */
+  const handleCameraClick = React.useCallback(() => {
+    setIsCameraOpen(true);
+  }, []);
+
+  /**
+   * Handles closing the camera
+   */
+  const handleCloseCamera = React.useCallback(() => {
+    setIsCameraOpen(false);
+  }, []);
+
+  /**
+   * Handles file upload click
+   */
+  const handleFileUploadClick = React.useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  /**
+   * Handles file selection
+   */
+  const handleFileChange = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result?.toString();
+        if (base64String) {
+          setPendingImage(base64String);
+          setImagePromptOpen(true);
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+    }
+  }, []);
+
+  /**
+   * Handles camera capture
+   */
+  const handleCameraCapture = React.useCallback((imageSrc: string) => {
+    setIsCameraOpen(false);
+    setPendingImage(imageSrc);
+    setImagePromptOpen(true);
+  }, []);
+
+  const handleImagePromptSubmit = React.useCallback(async () => {
+    if (!pendingImage || !imagePrompt.trim()) return;
+
+    try {
+      setIsLoading(true);
+      setImagePromptOpen(false);
+      
+      // Add user message with image placeholder and prompt
+      setMessages(prev => [...prev, { 
+        role: 'user', 
+        content: `Image analysis request: ${imagePrompt}` 
+      }]);
+      
+      // Extract base64 data
+      const base64String = pendingImage.split(',')[1];
+      
+      // Send to backend for processing
+      const response = await fetch('/api/gemini/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          imageData: base64String,
+          prompt: imagePrompt
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze image');
+      }
+      
+      // Add AI response
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: data.data 
+      }]);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error processing your image. Please try again later.' 
+      }]);
+    } finally {
+      setIsLoading(false);
+      setPendingImage(null);
+      setImagePrompt("");
+    }
+  }, [pendingImage, imagePrompt]);
+
   return (
     <div 
       className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : ''}`}
       role="main"
     >
       {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
+      
+      {/* Image Prompt Modal */}
+      {imagePromptOpen && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Add Image Description</h2>
+              <button 
+                onClick={() => {
+                  setImagePromptOpen(false);
+                  setPendingImage(null);
+                  setImagePrompt("");
+                }}
+                className="p-2 hover:bg-accent rounded-full transition-colors"
+                aria-label="Close prompt"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
+                {pendingImage && (
+                  <img 
+                    src={pendingImage} 
+                    alt="Preview" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+              </div>
+              <input
+                type="text"
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                placeholder="Describe what you want to know about this image..."
+                className="w-full px-4 py-2 rounded-lg bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <button
+                onClick={handleImagePromptSubmit}
+                disabled={!imagePrompt.trim()}
+                className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Take a Photo</h2>
+              <button 
+                onClick={handleCloseCamera}
+                className="p-2 hover:bg-accent rounded-full transition-colors"
+                aria-label="Close camera"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <CameraCapture
+              onCapture={handleCameraCapture}
+              onCancel={handleCloseCamera}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+        aria-hidden="true"
+      />
+      
       <div 
         className={`w-full flex flex-col h-screen ${!conversationStarted ? 'justify-center' : 'justify-between'}`}
         role="region"
@@ -179,51 +385,55 @@ export function TextArea() {
           {/* Conversation Area - Separate from input form */}
           {(messages.length > 0 || isLoading) && (
             <div 
-              className="w-full p-4 md:p-6 flex-1 overflow-y-auto mb-4"
+              className="w-full flex-1 mb-2.5 md:mb-3 flex flex-col"
               role="log"
               aria-label="Conversation history"
             >
-              <div className="space-y-6 w-full max-w-3xl mx-auto">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3"
-                  >
-                    <div className="flex-shrink-0">
-                      {message.role === 'user' ? (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                          <User className="w-5 h-5 text-foreground" aria-hidden="true" />
+              <ScrollArea className="h-[calc(100vh-250px)] w-full">
+                <div className="p-4 md:p-6">
+                  <div className="space-y-6 w-full max-w-3xl mx-auto">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3"
+                      >
+                        <div className="flex-shrink-0">
+                          {message.role === 'user' ? (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                              <User className="w-5 h-5 text-foreground" aria-hidden="true" />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                              <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                          <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                        <div
+                          className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
+                        >
+                          {message.content}
                         </div>
-                      )}
-                    </div>
-                    <div
-                      className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
-                    >
-                      {message.content}
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                        <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
                       </div>
-                    </div>
-                    <div className="flex-1 max-w-[85%] text-foreground">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200"></div>
+                    ))}
+                    {isLoading && (
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                            <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                          </div>
+                        </div>
+                        <div className="flex-1 max-w-[85%] text-foreground">
+                          <div className="flex space-x-2">
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100"></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200"></div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              </ScrollArea>
             </div>
           )}
           
@@ -278,6 +488,7 @@ export function TextArea() {
               <button
                 className="photo-upload-button p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label="Upload image"
+                onClick={handleFileUploadClick}
               >
                 <Paperclip className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -321,7 +532,7 @@ export function TextArea() {
                   </div>
                 )}
                 <button
-                  onClick={handleSendMessage}
+                  onClick={text ? handleSendMessage : handleCameraClick}
                   disabled={isLoading}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={text ? "Send message" : "Take photo"}
