@@ -55,6 +55,8 @@ export function TextArea() {
   const [text, setText] = React.useState<string>("");
   const [showHistory, setShowHistory] = React.useState(false);
   const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([]);
+  const [messages, setMessages] = React.useState<{role: string; content: string}[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   
   // Navigation hooks
   const router = useRouter();
@@ -98,6 +100,41 @@ export function TextArea() {
     }
   }, [isArticlesPage, router]);
 
+  /**
+   * Handles sending messages to Gemini API
+   */
+  const handleSendMessage = React.useCallback(async () => {
+    if (!text.trim() || isLoading) return;
+
+    setIsLoading(true);
+    const userMessage = { role: 'user', content: text };
+    setMessages(prev => [...prev, userMessage]);
+    setText("");
+
+    try {
+      const response = await fetch('/api/gemini/text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from Gemini');
+      }
+
+      const data = await response.json();
+      const assistantMessage = { role: 'assistant', content: data.data };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsLoading(false);
+    }
+  }, [text, isLoading]);
+
   return (
     <div 
       className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}
@@ -122,6 +159,31 @@ export function TextArea() {
             role="form"
             aria-label="Message input form"
           >
+            <div className="mb-4 space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] p-3 rounded-lg bg-muted">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 md:gap-4">
               {isArticlesPage && (
                 <Popover>
@@ -209,7 +271,9 @@ export function TextArea() {
                   </div>
                 )}
                 <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors"
+                  onClick={handleSendMessage}
+                  disabled={isLoading}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={text ? "Send message" : "Take photo"}
                 >
                   {text ? (
