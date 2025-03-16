@@ -4,6 +4,7 @@ import * as React from "react"
 import { Camera, Send, Paperclip, ScrollText, History, User, Bot, X } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { mockTickets } from "@/lib/mock-tickets"
 import { mockArticles } from "@/data/mock-articles"
 import { IntroTour } from "@/components/IntroTour"
@@ -13,6 +14,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import {
   Select,
@@ -73,6 +84,7 @@ export function TextArea() {
   const [imagePromptOpen, setImagePromptOpen] = React.useState(false);
   const [pendingImage, setPendingImage] = React.useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = React.useState("");
+  const [showCloseDialog, setShowCloseDialog] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Navigation hooks
@@ -96,41 +108,19 @@ export function TextArea() {
     const value = e.target.value;
     setText(value);
     
-    // Update matching articles when input length is greater than 2
-    if (value.length > 2) {
-      const matches = mockArticles.filter(article => 
-        article.title.toLowerCase().includes(value.toLowerCase()) ||
-        article.description.toLowerCase().includes(value.toLowerCase())
-      );
-      setMatchingArticles(matches);
-    } else {
+    // Clear suggestions if text is empty or too short
+    if (value.length <= 2) {
       setMatchingArticles([]);
+      return;
     }
+    
+    const matches = mockArticles.filter(article => 
+      article.title.toLowerCase().includes(value.toLowerCase()) ||
+      article.description.toLowerCase().includes(value.toLowerCase())
+    );
+    setMatchingArticles(matches);
   }, []);
 
-  /**
-   * Handles key down events to send message on Enter key press
-   * @param e - KeyboardEvent from the input element
-   */
-  const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  }, [text]);
-
-  /**
-   * Handles navigation to the articles page
-   */
-  const handleArticlesClick = React.useCallback(() => {
-    if (!isArticlesPage) {
-      router.push("/articles");
-    }
-  }, [isArticlesPage, router]);
-
-  /**
-   * Handles sending messages to Gemini API
-   */
   const handleSendMessage = React.useCallback(async () => {
     if (!text.trim() || isLoading) return;
 
@@ -138,6 +128,7 @@ export function TextArea() {
     const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
     setText("");
+    setMatchingArticles([]); // Clear suggestions after sending message
     
     // Mark conversation as started when first message is sent
     if (!conversationStarted) {
@@ -291,17 +282,37 @@ export function TextArea() {
       {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
       
       {/* Image Prompt Modal */}
+      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close Window</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to close this window? Any unsaved changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setImagePromptOpen(false);
+              setPendingImage(null);
+              setImagePrompt("");
+              setShowCloseDialog(false);
+            }}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {imagePromptOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowCloseDialog(true);
+          }
+        }}>
           <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Add Image Description</h2>
               <button 
-                onClick={() => {
-                  setImagePromptOpen(false);
-                  setPendingImage(null);
-                  setImagePrompt("");
-                }}
+                onClick={() => setShowCloseDialog(true)}
                 className="p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label="Close prompt"
               >
@@ -322,6 +333,12 @@ export function TextArea() {
                 type="text"
                 value={imagePrompt}
                 onChange={(e) => setImagePrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleImagePromptSubmit();
+                  }
+                }}
                 placeholder="Describe what you want to know about this image..."
                 className="w-full px-4 py-2 rounded-lg bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
@@ -389,7 +406,7 @@ export function TextArea() {
               role="log"
               aria-label="Conversation history"
             >
-              <ScrollArea className="h-[calc(100vh-250px)] w-full">
+              <ScrollArea className="h-[calc(100vh-160px)] w-full">
                 <div className="p-4 md:p-6">
                   <div className="space-y-6 w-full max-w-3xl mx-auto">
                     {messages.map((message, index) => (
@@ -411,7 +428,7 @@ export function TextArea() {
                         <div
                           className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
                         >
-                          {message.content}
+                          <MarkdownRenderer content={message.content} />
                         </div>
                       </div>
                     ))}
@@ -477,7 +494,7 @@ export function TextArea() {
               )}
               {!isArticlesPage && (
                 <button
-                  onClick={handleArticlesClick}
+                  onClick={() => router.push('/articles')}
                   className="articles-button p-2 hover:bg-accent rounded-full transition-colors"
                   aria-label="Go to articles"
                 >
@@ -498,7 +515,12 @@ export function TextArea() {
                   type="text"
                   value={text}
                   onChange={handleTextChange}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   placeholder="Type your message here..."
                   className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Message input"
