@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, Paperclip, ScrollText, History } from "lucide-react"
+import { Camera, Send, Paperclip, ScrollText, History, X } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
@@ -21,6 +21,13 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
+
+// TODO: Create and implement CameraCapture component
+// For now, using a temporary interface to avoid type errors
+interface CameraCapture {
+  onCapture: (imageSrc: string) => void;
+  onCancel: () => void;
+}
 
 /** Interface for upload options in the text area component */
 interface UploadOption {
@@ -57,6 +64,10 @@ export function TextArea() {
   const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([]);
   const [messages, setMessages] = React.useState<{role: string; content: string}[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  
+  // Add new state for camera and file upload
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Navigation hooks
   const router = useRouter();
@@ -140,12 +151,183 @@ export function TextArea() {
     }
   }, [text, isLoading]);
 
+  /**
+   * Handles opening the camera
+   */
+  const handleCameraClick = React.useCallback(() => {
+    setIsCameraOpen(true);
+  }, []);
+
+  /**
+   * Handles closing the camera
+   */
+  const handleCloseCamera = React.useCallback(() => {
+    setIsCameraOpen(false);
+  }, []);
+
+  /**
+   * Handles file upload click
+   */
+  const handleFileUploadClick = React.useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  /**
+   * Handles file selection
+   */
+  const handleFileChange = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result?.toString().split(',')[1];
+        
+        if (base64String) {
+          setIsLoading(true);
+          
+          // Add user message with image placeholder
+          setMessages(prev => [...prev, { 
+            role: 'user', 
+            content: 'Uploaded image for analysis' 
+          }]);
+          
+          try {
+            // Send to backend for processing
+            const response = await fetch('/api/gemini/image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                imageData: base64String,
+                prompt: "Analyze this image and provide IT support assistance if needed."
+              }),
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to analyze image');
+            }
+            
+            // Add AI response
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: data.data 
+            }]);
+          } catch (error) {
+            console.error('Error processing image:', error);
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: 'Sorry, I encountered an error processing your image. Please try again later.' 
+            }]);
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+    }
+  }, []);
+
+  /**
+   * Handles camera capture
+   */
+  const handleCameraCapture = React.useCallback(async (imageSrc: string) => {
+    try {
+      setIsCameraOpen(false);
+      setIsLoading(true);
+      
+      // Add user message with image placeholder
+      setMessages(prev => [...prev, { 
+        role: 'user', 
+        content: 'Captured image for analysis' 
+      }]);
+      
+      // Extract base64 data
+      const base64String = imageSrc.split(',')[1];
+      
+      // Send to backend for processing
+      const response = await fetch('/api/gemini/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          imageData: base64String,
+          prompt: "Analyze this image and provide IT support assistance if needed."
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze image');
+      }
+      
+      // Add AI response
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: data.data 
+      }]);
+    } catch (error) {
+      console.error('Error processing camera image:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error processing your image. Please try again later.' 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return (
     <div 
       className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : 'md:items-center md:justify-center'}`}
       role="main"
     >
       {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
+      
+      {/* Camera Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Take a Photo</h2>
+              <button 
+                onClick={handleCloseCamera}
+                className="p-2 hover:bg-accent rounded-full transition-colors"
+                aria-label="Close camera"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Placeholder for CameraCapture component implementation */}
+            <div>Camera capture functionality not yet implemented</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+        aria-hidden="true"
+      />
+      
       <div 
         className={`w-full ${isArticlesPage ? 'fixed bottom-0 left-0 right-0' : 'fixed md:static bottom-0 left-0 right-0'}`}
         role="region"
@@ -234,6 +416,7 @@ export function TextArea() {
               <button
                 className="photo-upload-button p-2 hover:bg-accent rounded-full transition-colors"
                 aria-label="Upload image"
+                onClick={handleFileUploadClick}
               >
                 <Paperclip className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -276,7 +459,7 @@ export function TextArea() {
                   </div>
                 )}
                 <button
-                  onClick={handleSendMessage}
+                  onClick={text ? handleSendMessage : handleCameraClick}
                   disabled={isLoading}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={text ? "Send message" : "Take photo"}
