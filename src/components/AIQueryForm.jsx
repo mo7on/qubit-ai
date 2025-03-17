@@ -27,7 +27,8 @@ export function AIQueryForm() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to generate AI response');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate AI response');
       }
       
       const data = await response.json();
