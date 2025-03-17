@@ -21,7 +21,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4" {...props} />,
             li: ({ node, ...props }) => <li className="mb-1" {...props} />,
             p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-            code: ({ inline, ...props }: { inline?: boolean } & React.HTMLProps<HTMLElement>) => (
+            code: ({ inline, className, ...props }: { inline?: boolean } & React.ComponentPropsWithoutRef<'code'>) => (
               <code
                 className={inline ? "bg-gray-800 px-1 py-0.5 rounded" : "block bg-gray-800 p-4 rounded-lg overflow-x-auto"}
                 {...props}
