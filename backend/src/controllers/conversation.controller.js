@@ -157,19 +157,101 @@ async function isITSupportDomain(query) {
 }
 
 /**
- * Generate an IT support response
+ * Extract device type from user query
+ * @param {string} query - User query
+ * @returns {string|null} - Detected device type or null if not found
+ */
+function extractDeviceType(query) {
+  if (!query || typeof query !== 'string') {
+    return null;
+  }
+  
+  const lowercaseQuery = query.toLowerCase();
+  
+  // Common device types to detect
+  const deviceTypes = {
+    'laptop': ['laptop', 'notebook', 'macbook', 'thinkpad', 'dell laptop', 'hp laptop', 'lenovo laptop'],
+    'desktop': ['desktop', 'pc', 'computer', 'workstation', 'tower'],
+    'smartphone': ['phone', 'smartphone', 'iphone', 'android', 'mobile', 'cell phone'],
+    'tablet': ['tablet', 'ipad', 'galaxy tab', 'surface'],
+    'printer': ['printer', 'scanner', 'all-in-one', 'multifunction printer'],
+    'router': ['router', 'modem', 'wifi router', 'access point', 'network device'],
+    'monitor': ['monitor', 'display', 'screen', 'lcd', 'led display'],
+    'peripheral': ['keyboard', 'mouse', 'headset', 'webcam', 'microphone', 'speakers']
+  };
+  
+  // Check for device type mentions
+  for (const [deviceType, keywords] of Object.entries(deviceTypes)) {
+    if (keywords.some(keyword => lowercaseQuery.includes(keyword))) {
+      return deviceType;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Generate an IT support response with device-specific troubleshooting
  * @param {string} query - User query
  * @returns {Promise<string>} - Generated response
  */
 async function generateITSupportResponse(query) {
   try {
-    // Create a more professional IT support context
-    const contextualizedQuery = `
-      As an IT support specialist, please provide a professional, accurate, and helpful response to the following technical question. 
-      Include troubleshooting steps, potential solutions, and any relevant technical information that would help resolve the issue.
-      
-      User query: ${query}
-    `;
+    // Extract device type from query
+    const deviceType = extractDeviceType(query);
+    
+    // Create a device-specific context if a device was detected
+    let contextualizedQuery = '';
+    
+    if (deviceType) {
+      contextualizedQuery = `
+        You are an expert IT support specialist with extensive experience troubleshooting ${deviceType} issues.
+        
+        TASK: Provide a detailed, step-by-step technical response to the following query about a ${deviceType}.
+        
+        GUIDELINES:
+        - Focus ONLY on IT support and technical assistance
+        - Include specific diagnostic steps for this ${deviceType}
+        - Suggest practical solutions with clear instructions
+        - Mention potential causes of the issue
+        - If relevant, include preventative maintenance tips
+        - Use technical terminology appropriately but explain complex concepts
+        - Format your response with clear headings and numbered steps
+        - If you need more information to provide a complete solution, specify exactly what details would help
+        
+        USER QUERY: "${query}"
+        
+        RESPONSE FORMAT:
+        1. Brief assessment of the issue
+        2. Step-by-step troubleshooting process
+        3. Potential solutions
+        4. Additional recommendations
+      `;
+    } else {
+      contextualizedQuery = `
+        You are an expert IT support specialist with extensive technical knowledge across hardware, software, and networking.
+        
+        TASK: Provide a detailed, step-by-step technical response to the following IT support query.
+        
+        GUIDELINES:
+        - Focus ONLY on IT support and technical assistance
+        - If the query is not related to IT support, politely explain that you can only help with technical issues
+        - Include specific diagnostic steps
+        - Suggest practical solutions with clear instructions
+        - Mention potential causes of the issue
+        - Use technical terminology appropriately but explain complex concepts
+        - Format your response with clear headings and numbered steps
+        - If you need more information to provide a complete solution, specify exactly what details would help
+        
+        USER QUERY: "${query}"
+        
+        RESPONSE FORMAT:
+        1. Brief assessment of the issue
+        2. Step-by-step troubleshooting process
+        3. Potential solutions
+        4. Additional recommendations
+      `;
+    }
     
     // Use AI integration service to generate response
     if (AIIntegrationService && AIIntegrationService.processMessage) {
@@ -177,7 +259,73 @@ async function generateITSupportResponse(query) {
       return result.response;
     }
     
-    // Comprehensive fallback response if AI service is unavailable
+    // Device-specific fallback responses if AI service is unavailable
+    const deviceSpecificTips = {
+      'laptop': `
+        For laptop issues, check:
+        1. Battery health and power adapter connection
+        2. Cooling vents for dust buildup
+        3. Power management settings
+        4. External display connection if screen issues
+        5. Update drivers, especially graphics and chipset
+      `,
+      'desktop': `
+        For desktop computer issues, check:
+        1. All cable connections (power, monitor, peripherals)
+        2. Internal components for dust or loose connections
+        3. Power supply functionality
+        4. RAM seating and potential issues
+        5. Update motherboard BIOS and drivers
+      `,
+      'smartphone': `
+        For smartphone issues, try:
+        1. Restart the device
+        2. Check for system updates
+        3. Clear app cache and data
+        4. Check storage space availability
+        5. Test in safe mode to identify problematic apps
+      `,
+      'tablet': `
+        For tablet issues, try:
+        1. Force restart the device
+        2. Check charging port for debris
+        3. Update the operating system
+        4. Reset to factory settings as a last resort
+        5. Check for screen or digitizer damage
+      `,
+      'printer': `
+        For printer issues, check:
+        1. Paper jams and ink/toner levels
+        2. Network connection or USB cable
+        3. Print spooler service status
+        4. Driver updates and compatibility
+        5. Printer firmware updates
+      `,
+      'router': `
+        For router/network issues, try:
+        1. Power cycle the router and modem
+        2. Check for firmware updates
+        3. Verify wireless channel settings
+        4. Reset to factory defaults if necessary
+        5. Check for interference sources
+      `
+    };
+    
+    // Generate fallback response based on device type
+    if (deviceType && deviceSpecificTips[deviceType]) {
+      return `
+        Thank you for your IT support inquiry about your ${deviceType}. Based on your question about "${query.substring(0, 40)}...", 
+        
+        ${deviceSpecificTips[deviceType]}
+        
+        For more specific assistance, please provide additional details about your ${deviceType} model, 
+        operating system version, and the exact error messages you're encountering.
+        
+        Our support team is available to help if you need further assistance.
+      `;
+    }
+    
+    // Generic fallback response
     return `
       Thank you for your IT support inquiry. Based on your question about "${query.substring(0, 40)}...", 
       
@@ -190,7 +338,7 @@ async function generateITSupportResponse(query) {
       5. Check system resources (CPU, memory, disk space)
       
       For more specific assistance, please provide additional details about your system configuration, 
-      including operating system version, hardware specifications, and the exact error messages you're encountering.
+      including device type, operating system version, and the exact error messages you're encountering.
       
       Our support team is available to help if you need further assistance.
     `;
@@ -224,8 +372,8 @@ exports.createMessage = async (req, res) => {
         // Generate AI response for IT support query
         aiResponse = await generateITSupportResponse(content);
       } else {
-        // Professional response for non-IT support queries
-        aiResponse = "This query does not appear to be related to IT support. I'm specialized in providing technical support for computer systems, software, networks, and other IT-related issues. Please feel free to ask any technology or IT support questions, and I'll be happy to assist you.";
+        // Clear and professional response for non-IT support queries
+        aiResponse = "I'm sorry, but your question appears to be outside the scope of IT support. I'm specifically designed to help with technical issues related to computers, software, networks, and other IT-related topics. I cannot provide assistance with non-IT related questions. Please feel free to ask any technology or IT support questions, and I'll be happy to help.";
       }
       
       // Create AI response message
