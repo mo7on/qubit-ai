@@ -1,41 +1,41 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { TavilySearchAPIRetriever } = require('tavily-js');
 
-// Initialize Gemini AI
+// تهيئة Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-// Initialize Tavily AI
+// تهيئة Tavily AI
 const tavilyRetriever = new TavilySearchAPIRetriever({
   apiKey: process.env.TAVILY_API_KEY,
   maxResults: 5
 });
 
 /**
- * Service for integrating Gemini AI and Tavily AI
+ * خدمة تكامل الذكاء الاصطناعي
  */
 class AIIntegrationService {
   /**
-   * Get relevant sources from Tavily AI
-   * @param {string} query - User query
-   * @param {Object} options - Search options
-   * @returns {Promise<Array>} - Array of sources
+   * الحصول على مصادر ذات صلة من Tavily AI
+   * @param {string} query - استعلام المستخدم
+   * @param {Object} options - خيارات البحث
+   * @returns {Promise<Array>} - مصفوفة من المصادر
    */
   static async getSources(query, options = {}) {
     try {
-      console.log(`Fetching sources for query: ${query}`);
+      console.log(`جلب المصادر للاستعلام: ${query}`);
       
       const searchOptions = {
         query,
-        search_depth: options.searchDepth || "advanced",
-        max_results: options.maxResults || 5,
-        include_domains: options.includeDomains || [],
-        exclude_domains: options.excludeDomains || []
+        search_depth: options?.searchDepth || "advanced",
+        max_results: options?.maxResults || 5,
+        include_domains: options?.includeDomains || [],
+        exclude_domains: options?.excludeDomains || []
       };
       
       const results = await tavilyRetriever.invoke(searchOptions);
       
-      // Format the sources
+      // تنسيق المصادر
       return results.map(result => ({
         title: result.title,
         url: result.url,
@@ -44,91 +44,62 @@ class AIIntegrationService {
         published_date: result.published_date || null
       }));
     } catch (error) {
-      console.error('Error fetching sources from Tavily:', error);
-      throw new Error(`Failed to fetch sources: ${error.message}`);
+      console.error('خطأ في جلب المصادر من Tavily:', error);
+      throw new Error(`فشل في جلب المصادر: ${error.message}`);
     }
   }
 
   /**
-   * Generate a response using Gemini AI with sources
-   * @param {string} query - User query
-   * @param {Array} sources - Sources from Tavily
-   * @returns {Promise<string>} - Generated response
+   * إنشاء رد باستخدام Gemini AI مع المصادر
+   * @param {string} query - استعلام المستخدم
+   * @param {Array} sources - المصادر من Tavily
+   * @param {Object} options - خيارات التوليد
+   * @returns {Promise<string>} - الرد المولد
    */
-  static async generateResponse(query, sources) {
+  static async generateResponse(query, sources, options = {}) {
     try {
-      console.log(`Generating response for query: ${query} with ${sources.length} sources`);
+      console.log(`توليد رد للاستعلام: ${query} مع ${sources.length} مصادر`);
       
-      // Format sources for the prompt
+      // تنسيق المصادر للإدخال
       const sourcesText = sources.map((source, index) => 
-        `Source ${index + 1}: ${source.title}\nURL: ${source.url}\nContent: ${source.content}\n`
+        `المصدر ${index + 1}: ${source.title}\nالرابط: ${source.url}\nالمحتوى: ${source.content}\n`
       ).join('\n');
       
-      // Create prompt with query and sources
+      // إنشاء إدخال مع الاستعلام والمصادر
       const prompt = `
-        You are a helpful AI research assistant that provides accurate, factual information.
+        أنت مساعد بحث ذكي اصطناعي مفيد يقدم معلومات دقيقة وواقعية.
         
-        Answer the following query based on these sources:
+        أجب على الاستعلام التالي بناءً على هذه المصادر:
         
-        Query: ${query}
+        الاستعلام: ${query}
         
-        Sources:
+        المصادر:
         ${sourcesText}
         
-        Instructions:
-        1. Provide a comprehensive answer that synthesizes information from the sources.
-        2. Include relevant citations to the sources in your response using [Source X] notation.
-        3. If the sources don't contain enough information to answer the query, please state that clearly.
-        4. Format your response in markdown for better readability.
-        5. If appropriate, structure your response with headings, bullet points, or numbered lists.
+        تعليمات:
+        1. قدم إجابة شاملة تجمع المعلومات من المصادر.
+        2. قم بتضمين اقتباسات ذات صلة للمصادر في ردك باستخدام ترميز [المصدر X].
+        3. إذا كانت المصادر لا تحتوي على معلومات كافية للإجابة على الاستعلام، يرجى ذكر ذلك بوضوح.
+        4. قم بتنسيق ردك بلغة Markdown لقراءة أفضل.
+        5. إذا كان ذلك مناسبًا، قم بهيكلة ردك باستخدام العناوين أو النقاط أو القوائم المرقمة.
+        6. كن موجزًا ولكن شاملًا.
+        7. ركز فقط على المعلومات من المصادر المقدمة.
       `;
       
-      // Generate response with Gemini
+      // توليد الرد باستخدام Gemini
       const result = await geminiModel.generateContent(prompt);
       const response = result.response;
       
       return response.text();
     } catch (error) {
-      console.error('Error generating response with Gemini:', error);
-      throw new Error(`Failed to generate response: ${error.message}`);
-    }
-  }
-
-  /**
-   * Main integration function
-   * @param {string} query - User query
-   * @param {Object} options - Options for processing
-   * @returns {Promise<Object>} - Combined result with response and sources
-   */
-  static async getResponseWithSources(query, options = {}) {
-    try {
-      // Step 1: Get sources from Tavily
-      const sources = await this.getSources(query, options.tavily || {});
+      console.error('خطأ في توليد الرد باستخدام Gemini:', error);
       
-      if (!sources || sources.length === 0) {
-        return {
-          query,
-          response: "I couldn't find any relevant sources to answer your question accurately. Please try rephrasing your query or asking something else.",
-          sources: []
-        };
+      // التعامل مع أنواع الأخطاء المحددة
+      if (error.message.includes('quota')) {
+        throw new Error('تم تجاوز حصة API. يرجى المحاولة مرة أخرى لاحقًا.');
       }
       
-      // Step 2: Generate response with Gemini using the sources
-      const response = await this.generateResponse(query, sources);
-      
-      // Step 3: Return combined result
-      return {
-        query,
-        response,
-        sources,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          sourceCount: sources.length
-        }
-      };
-    } catch (error) {
-      console.error('Error in AI integration:', error);
-      throw error;
+      throw new Error(`فشل في توليد الرد: ${error.message}`);
     }
   }
 }

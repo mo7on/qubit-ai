@@ -59,3 +59,69 @@ exports.getSources = async (req, res) => {
     });
   }
 };
+
+/**
+ * معالجة رسالة المستخدم وإرجاع رد مع مصادر
+ * @param {Object} req - كائن الطلب
+ * @param {Object} res - كائن الاستجابة
+ */
+exports.processUserMessage = async (req, res) => {
+  try {
+    const { message, options } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'الرسالة مطلوبة' 
+      });
+    }
+    
+    console.log(`معالجة رسالة المستخدم: ${message}`);
+    
+    // الحصول على المصادر من Tavily AI
+    const sources = await AIIntegrationService.getSources(message, options?.tavily);
+    
+    if (!sources || sources.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'لم يتم العثور على مصادر ذات صلة. يرجى إعادة صياغة السؤال.'
+      });
+    }
+    
+    // إنشاء رد باستخدام Gemini AI والمصادر
+    const response = await AIIntegrationService.generateResponse(message, sources, options?.gemini);
+    
+    // إرجاع النتيجة المجمعة
+    res.status(200).json({
+      status: 'success',
+      data: {
+        query: message,
+        response: response,
+        sources: sources,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          sourceCount: sources.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في معالجة رسالة المستخدم:', error);
+    
+    // تحديد رمز الحالة المناسب
+    let statusCode = 500;
+    let errorMessage = 'حدث خطأ أثناء معالجة الرسالة';
+    
+    if (error.message.includes('quota')) {
+      statusCode = 429;
+      errorMessage = 'تم تجاوز حصة API. يرجى المحاولة مرة أخرى لاحقًا.';
+    } else if (error.message.includes('sources')) {
+      statusCode = 502;
+      errorMessage = 'خطأ في جلب المصادر. يرجى المحاولة مرة أخرى لاحقًا.';
+    }
+    
+    res.status(statusCode).json({ 
+      status: 'error',
+      message: errorMessage
+    });
+  }
+};
