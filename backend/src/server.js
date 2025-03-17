@@ -17,6 +17,7 @@ dotenv.config();
 const authRoutes = require('./routes/auth.routes');
 const problemRoutes = require('./routes/problem.routes');
 const solutionRoutes = require('./routes/solution.routes');
+const aiRoutes = require('./routes/ai.routes');
 
 // Initialize Express app
 const app = express();
@@ -47,6 +48,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD
 app.use('/api/auth', authRoutes);
 app.use('/api/problems', problemRoutes);
 app.use('/api/solutions', solutionRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
