@@ -247,16 +247,18 @@ export function TextArea() {
   }, []);
 
   const handleImagePromptSubmit = React.useCallback(async () => {
-    if (!pendingImage || !imagePrompt.trim()) return;
+    if (!pendingImage) return; // Remove imagePrompt.trim() check
 
     try {
       setIsLoading(true);
       setImagePromptOpen(false);
       
-      // Add user message with image placeholder and prompt
+      // Add user message with image placeholder
       setMessages(prev => [...prev, { 
         role: 'user', 
-        content: `Image analysis request: ${imagePrompt}` 
+        content: imagePrompt.trim() 
+          ? `Image analysis request: ${imagePrompt}` 
+          : 'Image analysis request'
       }]);
       
       // Extract base64 data
@@ -270,7 +272,7 @@ export function TextArea() {
         },
         body: JSON.stringify({ 
           imageData: base64String,
-          prompt: imagePrompt
+          prompt: imagePrompt.trim() || 'Analyze this image' // Provide default prompt if empty
         }),
       });
       
@@ -370,7 +372,7 @@ export function TextArea() {
                   />
                   <button
                     onClick={handleImagePromptSubmit}
-                    disabled={!imagePrompt.trim()}
+                    disabled={!pendingImage} // Remove imagePrompt.trim() condition
                     className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Send
@@ -388,7 +390,7 @@ export function TextArea() {
                   <h2 className="text-xl font-semibold">Take a Photo</h2>
                   <button 
                     onClick={handleCloseCamera}
-                    className="p-2 hover:bg-accent rounded-full transition-colors"
+                    className="p-2 hover:bg-accent rounded-full transition-colors cursor-pointer"
                     aria-label="Close camera"
                   >
                     <X className="w-5 h-5" />
@@ -492,7 +494,7 @@ export function TextArea() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
-                          className="plus-button p-2 hover:bg-accent rounded-full transition-colors"
+                          className="plus-button p-2 hover:bg-accent rounded-full transition-colors cursor-pointer"
                           aria-label="Toggle options"
                         >
                           {showHistory ? (
@@ -505,7 +507,7 @@ export function TextArea() {
                       <PopoverContent className="w-48" align="start" side="top" sideOffset={5}>
                         <div className="flex flex-col space-y-2">
                           <button
-                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full"
+                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
                             onClick={() => {
                               handleFileUploadClick();
                               const trigger = document.querySelector('.plus-button') as HTMLButtonElement;
@@ -518,7 +520,7 @@ export function TextArea() {
                           <Popover>
                             <PopoverTrigger asChild>
                               <button
-                                className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full"
+                                className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
                               >
                                 <History className="w-5 h-5" />
                                 <span>History</span>
@@ -594,7 +596,7 @@ export function TextArea() {
                     <button
                       onClick={handleSendMessage}
                       disabled={!text || isLoading}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       aria-label="Send message"
                     >
                       <Send className="w-4 h-4" aria-hidden="true" />
