@@ -491,63 +491,80 @@ export function TextArea() {
               >
                 <div className="flex items-center gap-2 md:gap-4">
                   {!isArticlesPage && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          className="plus-button p-2 hover:bg-accent rounded-full transition-colors cursor-pointer"
-                          aria-label="Toggle options"
-                        >
-                          {showHistory ? (
-                            <X className="w-5 h-5" aria-hidden="true" />
-                          ) : (
-                            <Plus className="w-5 h-5" aria-hidden="true" />
-                          )}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48" align="start" side="top" sideOffset={5}>
-                        <div className="flex flex-col space-y-2">
+                    <>
+                      {/* Add Qubit AI icon */}
+                      <button
+                        onClick={() => router.push('/articles')}
+                        className="p-2 hover:bg-accent rounded-full transition-colors"
+                        aria-label="Go to articles"
+                      >
+                        <img
+                          src="/qubit-ai.svg"
+                          alt="Qubit AI"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 cursor-pointer"
+                        />
+                      </button>
+                      
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <button
-                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
-                            onClick={() => {
-                              handleFileUploadClick();
-                              const trigger = document.querySelector('.plus-button') as HTMLButtonElement;
-                              trigger?.click();
-                            }}
+                            className="plus-button p-2 hover:bg-accent rounded-full transition-colors"
+                            aria-label="Toggle options"
                           >
-                            <Paperclip className="w-5 h-5" />
-                            <span>Attachment</span>
+                            {showHistory ? (
+                              <X className="w-5 h-5" aria-hidden="true" />
+                            ) : (
+                              <Plus className="w-5 h-5" aria-hidden="true" />
+                            )}
                           </button>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
-                              >
-                                <History className="w-5 h-5" />
-                                <span>History</span>
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64" align="start" side="right" sideOffset={5}>
-                              <ScrollArea className="h-[300px] w-full">
-                                <div className="space-y-4" role="list" aria-label="Chat history">
-                                  {mockTickets.map((ticket) => (
-                                    <div
-                                      key={ticket.id}
-                                      className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                                      role="listitem"
-                                    >
-                                      <p className="text-sm text-muted-foreground">
-                                        {ticket.timestamp.toLocaleString()}
-                                      </p>
-                                      <p className="mt-1">{ticket.content}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48" align="start" side="top" sideOffset={5}>
+                          <div className="flex flex-col space-y-2">
+                            <button
+                              className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
+                              onClick={() => {
+                                handleFileUploadClick();
+                                const trigger = document.querySelector('.plus-button') as HTMLButtonElement;
+                                trigger?.click();
+                              }}
+                            >
+                              <Paperclip className="w-5 h-5" />
+                              <span>Attachment</span>
+                            </button>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full cursor-pointer"
+                                >
+                                  <History className="w-5 h-5" />
+                                  <span>History</span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64" align="start" side="right" sideOffset={5}>
+                                <ScrollArea className="h-[300px] w-full">
+                                  <div className="space-y-4" role="list" aria-label="Chat history">
+                                    {mockTickets.map((ticket) => (
+                                      <div
+                                        key={ticket.id}
+                                        className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                                        role="listitem"
+                                      >
+                                        <p className="text-sm text-muted-foreground">
+                                          {ticket.timestamp.toLocaleString()}
+                                        </p>
+                                        <p className="mt-1">{ticket.content}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ScrollArea>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </>
                   )}
 
                   <div className="flex-1 relative textbar-container">

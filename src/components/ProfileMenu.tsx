@@ -361,15 +361,7 @@ export function ProfileMenu() {
               </PopoverContent>
             </Popover>
           </div>
-          {/* Add the Articles section before About */}
-          <div 
-            className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200"
-            onClick={() => router.push('/articles')}
-          >
-            <span className="text-sm">Articles</span>
-            <ScrollText className="h-4 w-4" aria-hidden="true" />
-          </div>
-
+          {/* Remove Articles section and keep About */}
           <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200">
             <span className="text-sm">About</span>
           </div>
