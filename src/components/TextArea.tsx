@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, Paperclip, ScrollText, History, User, Bot, X } from "lucide-react"
+import { Camera, Send, Paperclip, ScrollText, History, User, Bot, X, Plus } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select"
 
 import { CameraCapture } from "@/components/CameraCapture"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Remove the temporary interface since we now have the actual component
 // Delete these lines:
@@ -78,6 +79,17 @@ export function TextArea() {
   const [messages, setMessages] = React.useState<{role: string; content: string}[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [conversationStarted, setConversationStarted] = React.useState(false);
+
+  // Check for pending AI query from articles page
+  React.useEffect(() => {
+    const pendingQuery = localStorage.getItem("pendingAIQuery");
+    if (pendingQuery) {
+      setText(pendingQuery);
+      localStorage.removeItem("pendingAIQuery");
+      // Automatically send the message
+      handleSendMessage();
+    }
+  }, []);
   
   // Add new state for camera and file upload
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
@@ -104,7 +116,7 @@ export function TextArea() {
    * Handles text input changes and updates article suggestions
    * @param e - Change event from the input element
    */
-  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setText(value);
     
@@ -119,6 +131,18 @@ export function TextArea() {
       article.description.toLowerCase().includes(value.toLowerCase())
     );
     setMatchingArticles(matches);
+  }, []);
+
+  // Add article suggestion click handler
+  const handleArticleSuggestionClick = React.useCallback((articleId: string) => {
+    setText("");
+    setMatchingArticles([]);
+    // Dispatch custom event to expand the article
+    window.dispatchEvent(
+      new CustomEvent('expandArticle', {
+        detail: { articleId }
+      })
+    );
   }, []);
 
   const handleSendMessage = React.useCallback(async () => {
@@ -275,301 +299,315 @@ export function TextArea() {
   }, [pendingImage, imagePrompt]);
 
   return (
-    <div 
-      className={`relative flex flex-col min-h-screen ${isArticlesPage ? '' : ''}`}
-      role="main"
-    >
-      {isArticlesPage ? <ArticlesTour /> : <IntroTour />}
-      
-      {/* Image Prompt Modal */}
-      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Close Window</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to close this window? Any unsaved changes will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setImagePromptOpen(false);
-              setPendingImage(null);
-              setImagePrompt("");
-              setShowCloseDialog(false);
-            }}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {imagePromptOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowCloseDialog(true);
-          }
-        }}>
-          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Add Image Description</h2>
-              <button 
-                onClick={() => setShowCloseDialog(true)}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-                aria-label="Close prompt"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
-                {pendingImage && (
-                  <img 
-                    src={pendingImage} 
-                    alt="Preview" 
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-              </div>
-              <input
-                type="text"
-                value={imagePrompt}
-                onChange={(e) => setImagePrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleImagePromptSubmit();
-                  }
-                }}
-                placeholder="Describe what you want to know about this image..."
-                className="w-full px-4 py-2 rounded-lg bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <button
-                onClick={handleImagePromptSubmit}
-                disabled={!imagePrompt.trim()}
-                className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Camera Modal */}
-      {isCameraOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Take a Photo</h2>
-              <button 
-                onClick={handleCloseCamera}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-                aria-label="Close camera"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <CameraCapture
-              onCapture={handleCameraCapture}
-              onCancel={handleCloseCamera}
-            />
-          </div>
-        </div>
-      )}
-      
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="image/*"
-        className="hidden"
-        aria-hidden="true"
-      />
-      
-      <div 
-        className={`w-full flex flex-col h-screen ${!conversationStarted ? 'justify-center' : 'justify-between'}`}
-        role="region"
-        aria-label="Chat interface"
-      >
-        <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted ? 'h-full justify-between' : ''}`}>
-          {!isArticlesPage && !conversationStarted && (
-            <div className="w-full text-center mb-6">
-              <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
-              <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
-            </div>
-          )}
+    <>
+      {!isArticlesPage ? (
+        <div 
+          className="relative flex flex-col min-h-screen"
+          role="main"
+        >
+          <IntroTour />
           
-          {/* Conversation Area - Separate from input form */}
-          {(messages.length > 0 || isLoading) && (
-            <div 
-              className="w-full flex-1 mb-2.5 md:mb-3 flex flex-col"
-              role="log"
-              aria-label="Conversation history"
-            >
-              <ScrollArea className="h-[calc(100vh-160px)] w-full">
-                <div className="p-4 md:p-6">
-                  <div className="space-y-6 w-full max-w-3xl mx-auto">
-                    {messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3"
-                      >
-                        <div className="flex-shrink-0">
-                          {message.role === 'user' ? (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                              <User className="w-5 h-5 text-foreground" aria-hidden="true" />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                              <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
-                        >
-                          <MarkdownRenderer content={message.content} />
-                        </div>
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                            <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
-                          </div>
-                        </div>
-                        <div className="flex-1 max-w-[85%] text-foreground">
-                          <div className="flex space-x-2">
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100"></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200"></div>
-                          </div>
-                        </div>
-                      </div>
+          {/* Image Prompt Modal */}
+          <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Close Window</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to close this window? Any unsaved changes will be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => {
+                  setImagePromptOpen(false);
+                  setPendingImage(null);
+                  setImagePrompt("");
+                  setShowCloseDialog(false);
+                }}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {imagePromptOpen && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCloseDialog(true);
+              }
+            }}>
+              <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Add Image Description</h2>
+                  <button 
+                    onClick={() => setShowCloseDialog(true)}
+                    className="p-2 hover:bg-accent rounded-full transition-colors"
+                    aria-label="Close prompt"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
+                    {pendingImage && (
+                      <img 
+                        src={pendingImage} 
+                        alt="Preview" 
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                     )}
                   </div>
+                  <input
+                    type="text"
+                    value={imagePrompt}
+                    onChange={(e) => setImagePrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleImagePromptSubmit();
+                      }
+                    }}
+                    placeholder="Describe what you want to know about this image..."
+                    className="w-full px-4 py-2 rounded-lg bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <button
+                    onClick={handleImagePromptSubmit}
+                    disabled={!imagePrompt.trim()}
+                    className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Send
+                  </button>
                 </div>
-              </ScrollArea>
+              </div>
+            </div>
+          )}
+
+          {/* Camera Modal */}
+          {isCameraOpen && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Take a Photo</h2>
+                  <button 
+                    onClick={handleCloseCamera}
+                    className="p-2 hover:bg-accent rounded-full transition-colors"
+                    aria-label="Close camera"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <CameraCapture
+                  onCapture={handleCameraCapture}
+                  onCancel={handleCloseCamera}
+                />
+              </div>
             </div>
           )}
           
-          {/* Input Form */}
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+            aria-hidden="true"
+          />
+          
           <div 
-            className={`w-full p-4 md:p-6 rounded-2xl bg-background border border-input flex flex-col ${conversationStarted ? 'sticky bottom-0 mt-auto' : ''}`}
-            role="form"
-            aria-label="Message input form"
+            className={`w-full flex flex-col h-screen ${!conversationStarted ? 'justify-center' : 'justify-between'}`}
+            role="region"
+            aria-label="Chat interface"
           >
-            <div className="flex items-center gap-2 md:gap-4">
-              {isArticlesPage && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      className="history-button p-2 hover:bg-accent rounded-full transition-colors"
-                      aria-label="Toggle history"
-                      aria-expanded={showHistory}
-                    >
-                      <History className="w-5 h-5" aria-hidden="true" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80" align="start">
-                    <ScrollArea className="h-[300px] w-full">
-                      <div className="space-y-4" role="list" aria-label="Chat history">
-                        {mockTickets.map((ticket) => (
+            <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted ? 'h-full justify-between' : ''}`}>
+              {!conversationStarted && (
+                <div className="w-full text-center mb-6">
+                  <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
+                  <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
+                </div>
+              )}
+              
+              {/* Conversation Area - Separate from input form */}
+              {(messages.length > 0 || isLoading) && (
+                <div 
+                  className="w-full flex-1 mb-2.5 md:mb-3 flex flex-col"
+                  role="log"
+                  aria-label="Conversation history"
+                >
+                  <ScrollArea className="h-[calc(100vh-160px)] w-full">
+                    <div className="p-4 md:p-6">
+                      <div className="space-y-6 w-full max-w-3xl mx-auto">
+                        {messages.map((message, index) => (
                           <div
-                            key={ticket.id}
-                            className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                            role="listitem"
+                            key={index}
+                            className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-3 duration-300"
                           >
-                            <p className="text-sm text-muted-foreground">
-                              {ticket.timestamp.toLocaleString()}
-                            </p>
-                            <p className="mt-1">{ticket.content}</p>
+                            <div className="flex-shrink-0">
+                              {message.role === 'user' ? (
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                                  <User className="w-5 h-5 text-foreground" aria-hidden="true" />
+                                </div>
+                              ) : (
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                                  <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
+                            >
+                              <MarkdownRenderer content={message.content} />
+                            </div>
                           </div>
                         ))}
+                        {isLoading && (
+                          <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-3 duration-300">
+                            <div className="flex-shrink-0">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
+                                <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                              </div>
+                            </div>
+                            <div className="flex-1 max-w-[85%] text-foreground">
+                              {/* Skeleton loading with smooth animation */}
+                              <div className="space-y-2 animate-pulse">
+                                <Skeleton className="h-4 w-[80%] bg-accent/50 dark:bg-accent/30 transition-opacity duration-300" />
+                                <Skeleton className="h-4 w-[60%] bg-accent/50 dark:bg-accent/30 transition-opacity duration-300 delay-100" />
+                                <Skeleton className="h-4 w-[70%] bg-accent/50 dark:bg-accent/30 transition-opacity duration-300 delay-200" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </ScrollArea>
-                  </PopoverContent>
-                </Popover>
+                    </div>
+                  </ScrollArea>
+                </div>
               )}
-              {!isArticlesPage && (
-                <button
-                  onClick={() => router.push('/articles')}
-                  className="articles-button p-2 hover:bg-accent rounded-full transition-colors"
-                  aria-label="Go to articles"
-                >
-                  <ScrollText className="w-5 h-5" aria-hidden="true" />
-                </button>
-              )}
-
-              <button
-                className="photo-upload-button p-2 hover:bg-accent rounded-full transition-colors"
-                aria-label="Upload image"
-                onClick={handleFileUploadClick}
+              
+              {/* Input Form */}
+              <div 
+                className={`w-full p-4 md:p-6 rounded-2xl bg-background border border-input flex flex-col ${conversationStarted ? 'sticky bottom-0 mt-auto' : ''}`}
+                role="form"
+                aria-label="Message input form"
               >
-                <Paperclip className="w-5 h-5" aria-hidden="true" />
-              </button>
-
-              <div className="flex-1 relative textbar-container">
-                <input
-                  type="text"
-                  value={text}
-                  onChange={handleTextChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Type your message here..."
-                  className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Message input"
-                  role="textbox"
-                  aria-expanded={matchingArticles.length > 0}
-                />
-                {matchingArticles.length > 0 && (
-                  <div 
-                    className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg"
-                    role="listbox"
-                    aria-label="Matching articles"
-                  >
-                    <ScrollArea className="max-h-[200px]">
-                      <div className="p-2 space-y-2">
-                        {matchingArticles.map((article) => (
-                          <div
-                            key={article.id}
-                            onClick={() => {}}
-                            className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
-                            role="option"
-                            aria-selected="false"
+                <div className="flex items-center gap-2 md:gap-4">
+                  {!isArticlesPage && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="plus-button p-2 hover:bg-accent rounded-full transition-colors"
+                          aria-label="Toggle options"
+                        >
+                          {showHistory ? (
+                            <X className="w-5 h-5" aria-hidden="true" />
+                          ) : (
+                            <Plus className="w-5 h-5" aria-hidden="true" />
+                          )}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48" align="start" side="top" sideOffset={5}>
+                        <div className="flex flex-col space-y-2">
+                          <button
+                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full"
+                            onClick={() => {
+                              handleFileUploadClick();
+                              const trigger = document.querySelector('.plus-button') as HTMLButtonElement;
+                              trigger?.click();
+                            }}
                           >
-                            <h3 className="font-medium">{article.title}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-1">
-                              {article.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-                <button
-                  onClick={text ? handleSendMessage : handleCameraClick}
-                  disabled={isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={text ? "Send message" : "Take photo"}
-                >
-                  {text ? (
-                    <Send className="w-4 h-4" aria-hidden="true" />
-                  ) : (
-                    <Camera className="w-4 h-4" aria-hidden="true" />
+                            <Paperclip className="w-5 h-5" />
+                            <span>Attachment</span>
+                          </button>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className="flex items-center space-x-2 p-2 hover:bg-accent rounded-lg transition-colors w-full"
+                              >
+                                <History className="w-5 h-5" />
+                                <span>History</span>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64" align="start" side="right" sideOffset={5}>
+                              <ScrollArea className="h-[300px] w-full">
+                                <div className="space-y-4" role="list" aria-label="Chat history">
+                                  {mockTickets.map((ticket) => (
+                                    <div
+                                      key={ticket.id}
+                                      className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                                      role="listitem"
+                                    >
+                                      <p className="text-sm text-muted-foreground">
+                                        {ticket.timestamp.toLocaleString()}
+                                      </p>
+                                      <p className="mt-1">{ticket.content}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
-                </button>
+
+                  <div className="flex-1 relative textbar-container">
+                    <input
+                      type="text"
+                      value={text}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTextChange(e as unknown as React.ChangeEvent<HTMLTextAreaElement>)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="Type your message here..."
+                      className="w-full px-4 py-2 rounded-full bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Message input"
+                      role="textbox"
+                      aria-expanded={matchingArticles.length > 0}
+                    />
+                    {matchingArticles.length > 0 && (
+                      <div 
+                        className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg"
+                        role="listbox"
+                        aria-label="Matching articles"
+                      >
+                        <ScrollArea className="max-h-[200px]">
+                          <div className="p-2 space-y-2">
+                            {matchingArticles.map((article) => (
+                              <div
+                                key={article.id}
+                                onClick={() => {}}
+                                className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+                                role="option"
+                                aria-selected="false"
+                              >
+                                <h3 className="font-medium">{article.title}</h3>
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {article.description}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!text || isLoading}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Send message"
+                    >
+                      <Send className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  )
+      ) : (
+        <ArticlesTour />
+      )}
+    </>
+  );
 }
