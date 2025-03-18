@@ -1,8 +1,9 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const TavilyService = require('./tavily.service');
+const DomainDetectionService = require('./domain-detection.service');
 
 /**
- * Service for AI model integration
+ * Service for AI model integration with two-step process
  */
 class AIIntegrationService {
   constructor() {
@@ -11,41 +12,53 @@ class AIIntegrationService {
   }
 
   /**
-   * Process a message with research sources
-   * @param {string} message - User message
-   * @returns {Promise<Object>} - AI response with sources
+   * Step 1: Get sources from Tavily
+   * @param {string} query - User query
+   * @returns {Promise<Array>} - Array of sources
    */
-  async processMessageWithSources(message) {
+  async getSources(query) {
     try {
-      // Step 1: Get sources from Tavily
-      console.log('Fetching sources from Tavily for query:', message);
-      const sources = await TavilyService.searchSources(message);
+      // Check if query is IT-related first
+      const isITRelated = DomainDetectionService.isITSupportDomain(query);
       
-      // Step 2: Generate response with Gemini using the sources
-      const response = await this.generateResponseWithSources(message, sources);
+      if (!isITRelated) {
+        return {
+          success: false,
+          isITRelated: false,
+          sources: [],
+          message: DomainDetectionService.getNonITSupportResponse()
+        };
+      }
+      
+      // Get sources from Tavily
+      const sources = await TavilyService.searchSources(query);
       
       return {
         success: true,
-        response: response,
-        sources: sources
+        isITRelated: true,
+        sources: sources,
+        message: sources.length > 0 
+          ? "Found relevant sources for your query." 
+          : "No specific sources found, but I can still help with your query."
       };
     } catch (error) {
-      console.error('Error processing message with sources:', error);
+      console.error('Error getting sources:', error);
       return {
         success: false,
-        response: 'I apologize, but I encountered a technical issue while processing your request. Please try again or contact our support team directly for immediate assistance.',
-        sources: []
+        isITRelated: true,
+        sources: [],
+        message: "Error retrieving sources. I'll try to answer based on my knowledge."
       };
     }
   }
 
   /**
-   * Generate a response using sources
+   * Step 2: Generate response based on sources
    * @param {string} query - User query
    * @param {Array} sources - Sources from Tavily
    * @returns {Promise<string>} - Generated response
    */
-  async generateResponseWithSources(query, sources) {
+  async generateResponse(query, sources) {
     try {
       // Format sources for the prompt
       const sourcesText = sources.length > 0 
@@ -82,10 +95,16 @@ class AIIntegrationService {
       `;
       
       const result = await this.model.generateContent(prompt);
-      return result.response.text();
+      return {
+        success: true,
+        response: result.response.text()
+      };
     } catch (error) {
       console.error('Error generating response with Gemini:', error);
-      return 'I apologize, but I encountered a technical issue while generating a response. Here are some general troubleshooting steps you can try while I work on fixing this issue.';
+      return {
+        success: false,
+        response: 'I apologize, but I encountered a technical issue while generating a response. Here are some general troubleshooting steps you can try while I work on fixing this issue.'
+      };
     }
   }
 }

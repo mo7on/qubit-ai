@@ -79,6 +79,95 @@ exports.getMessages = async (req, res) => {
   }
 };
 
+// Step 1: Get sources for a query
+exports.getSources = async (req, res) => {
+  try {
+    const { query } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Query is required'
+      });
+    }
+    
+    const result = await AIIntegrationService.getSources(query);
+    
+    res.status(200).json({
+      status: result.success ? 'success' : 'error',
+      isITRelated: result.isITRelated,
+      message: result.message,
+      data: {
+        sources: result.sources
+      }
+    });
+  } catch (error) {
+    console.error('Error getting sources:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error retrieving sources'
+    });
+  }
+};
+
+// Step 2: Generate response based on sources
+exports.generateResponse = async (req, res) => {
+  try {
+    const { query, sources, conversationId } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Query is required'
+      });
+    }
+    
+    // Generate response
+    const result = await AIIntegrationService.generateResponse(query, sources || []);
+    
+    // If conversation ID is provided, store messages in database
+    if (conversationId) {
+      // Store user message
+      await DatabaseService.message.create({
+        conversation_id: conversationId,
+        content: query,
+        role: 'user',
+        created_at: new Date()
+      });
+      
+      // Store AI response with sources metadata
+      await DatabaseService.message.create({
+        conversation_id: conversationId,
+        content: result.response,
+        role: 'assistant',
+        metadata: {
+          sources: sources ? sources.map(s => ({ title: s.title, url: s.url })) : []
+        },
+        created_at: new Date()
+      });
+      
+      // Update conversation timestamp
+      await DatabaseService.conversation.update(conversationId, {
+        updated_at: new Date()
+      });
+    }
+    
+    res.status(200).json({
+      status: result.success ? 'success' : 'error',
+      data: {
+        response: result.response
+      }
+    });
+  } catch (error) {
+    console.error('Error generating response:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error generating response'
+    });
+  }
+};
+
+// Combined method for backward compatibility
 exports.createMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -92,48 +181,53 @@ exports.createMessage = async (req, res) => {
       created_at: new Date()
     });
     
-    // If this is a user message, generate an AI response
+    // If this is a user message, process it in two steps
     if (role === 'user' || !role) {
-      // Check if the query is related to IT support
-      const isITSupportQuery = DomainDetectionService.isITSupportDomain(content);
+      // Step 1: Get sources
+      const sourcesResult = await AIIntegrationService.getSources(content);
       
       let aiResponse;
       let sources = [];
       
-      if (isITSupportQuery) {
-        // Generate AI response with sources for IT support query
-        const result = await AIIntegrationService.processMessageWithSources(content);
-        aiResponse = result.response;
-        sources = result.sources;
+      if (!sourcesResult.isITRelated) {
+        // Not IT related, use rejection message
+        aiResponse = sourcesResult.message;
       } else {
-        // Professional response for non-IT support queries
-        aiResponse = DomainDetectionService.getNonITSupportResponse();
+        // Step 2: Generate response based on sources
+        sources = sourcesResult.sources;
+        const responseResult = await AIIntegrationService.generateResponse(content, sources);
+        aiResponse = responseResult.response;
       }
       
-      // Create AI response message with metadata including sources
+      // Create AI response message
       const assistantMessage = await DatabaseService.message.create({
         conversation_id: conversationId,
         content: aiResponse,
         role: 'assistant',
         metadata: {
-          isITSupportQuery,
+          isITRelated: sourcesResult.isITRelated,
           sources: sources.map(s => ({ title: s.title, url: s.url }))
         },
         created_at: new Date()
       });
       
-      // Return both messages and sources
+      // Update conversation timestamp
+      await DatabaseService.conversation.update(conversationId, {
+        updated_at: new Date()
+      });
+      
       return res.status(201).json({
         status: 'success',
         data: {
           userMessage,
           assistantMessage,
-          sources: isITSupportQuery ? sources : []
+          sources,
+          isITRelated: sourcesResult.isITRelated
         }
       });
     }
     
-    // Update conversation's updated_at timestamp
+    // Update conversation timestamp
     await DatabaseService.conversation.update(conversationId, {
       updated_at: new Date()
     });

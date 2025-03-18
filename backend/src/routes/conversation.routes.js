@@ -15,7 +15,8 @@ router.post('/', conversationController.createConversation);
 router.get('/:conversationId/messages', conversationController.getMessages);
 router.post('/:conversationId/messages', conversationController.createMessage);
 
-// Sources route
-router.get('/messages/:messageId/sources', conversationController.getMessageSources);
+// Two-step process routes
+router.post('/sources', conversationController.getSources);
+router.post('/generate', conversationController.generateResponse);
 
 module.exports = router;
