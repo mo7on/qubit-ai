@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { User, ScrollText } from "lucide-react"
-import { UAParser } from "ua-parser-js"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 
@@ -68,16 +67,7 @@ export function ProfileMenu() {
     language: mockSystemInfo.language
   })
 
-  // Initialize UAParser and detect device information
-  React.useEffect(() => {
-    const parser = new UAParser()
-    const device = parser.getDevice()
-    setDeviceInfo(prev => ({
-      ...prev,
-      manufacturer: device.vendor || 'Unknown',
-      model: device.model || 'Unknown'
-    }))
-  }, [])
+
   
   // Add nameInfo state
   const [nameInfo, setNameInfo] = React.useState<UserInfo>({ firstName: '' })
