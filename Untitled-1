@@ -1,5 +1,0 @@
-// Instead of:
-import { validate } from '../middleware';
-
-// Use this to import the specific validation middleware:
-import { validate } from '../middleware/validation.middleware';
