@@ -1,107 +1,177 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { TavilySearchAPIRetriever } = require('tavily-js');
-const tavilyService = require('./tavily.service');
-
-// تهيئة Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-// تهيئة Tavily AI
-const tavilyRetriever = new TavilySearchAPIRetriever({
-  apiKey: process.env.TAVILY_API_KEY,
-  maxResults: 5
-});
+const axios = require('axios');
+const DomainDetectionService = require('./domain-detection.service');
+const DatabaseService = require('./database.service');
 
 /**
- * خدمة تكامل الذكاء الاصطناعي
+ * Service for AI model integration with domain filtering
  */
 class AIIntegrationService {
-  /**
-   * الحصول على مصادر ذات صلة من Tavily AI
-   * @param {string} query - استعلام المستخدم
-   * @param {Object} options - خيارات البحث
-   * @returns {Promise<Array>} - مصفوفة من المصادر
-   */
-  static async getSources(query, options = {}) {
-    try {
-      console.log(`جلب المصادر للاستعلام: ${query}`);
-      
-      const searchOptions = {
-        searchDepth: options?.searchDepth || "advanced",
-        maxResults: options?.maxResults || 5,
-        includeDomains: options?.includeDomains || [],
-        excludeDomains: options?.excludeDomains || []
-      };
-      
-      const results = await tavilyService.search(query, searchOptions);
-      
-      // Format the sources
-      return results.results.map(result => ({
-        title: result.title,
-        url: result.url,
-        content: result.content,
-        score: result.score,
-        published_date: result.published_date || null
-      }));
-    } catch (error) {
-      console.error('خطأ في جلب المصادر من Tavily:', error);
-      throw new Error(`فشل في جلب المصادر: ${error.message}`);
-    }
+  constructor() {
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.tavilyApiKey = process.env.TAVILY_API_KEY;
   }
 
   /**
-   * إنشاء رد باستخدام Gemini AI مع المصادر
-   * @param {string} query - استعلام المستخدم
-   * @param {Array} sources - المصادر من Tavily
-   * @param {Object} options - خيارات التوليد
-   * @returns {Promise<string>} - الرد المولد
+   * Process a user message through the complete pipeline
+   * @param {string} message - User message
+   * @param {string} conversationId - Conversation ID for database storage
+   * @returns {Promise<Object>} - Processing result
    */
-  static async generateResponse(query, sources, options = {}) {
+  async processMessage(message, conversationId) {
     try {
-      console.log(`توليد رد للاستعلام: ${query} مع ${sources.length} مصادر`);
+      // Step 1: Domain detection
+      const domainResult = await DomainDetectionService.processQuery(message);
       
-      // تنسيق المصادر للإدخال
-      const sourcesText = sources.map((source, index) => 
-        `المصدر ${index + 1}: ${source.title}\nالرابط: ${source.url}\nالمحتوى: ${source.content}\n`
-      ).join('\n');
-      
-      // إنشاء إدخال مع الاستعلام والمصادر
-      const prompt = `
-        أنت مساعد بحث ذكي اصطناعي مفيد يقدم معلومات دقيقة وواقعية.
-        
-        أجب على الاستعلام التالي بناءً على هذه المصادر:
-        
-        الاستعلام: ${query}
-        
-        المصادر:
-        ${sourcesText}
-        
-        تعليمات:
-        1. قدم إجابة شاملة تجمع المعلومات من المصادر.
-        2. قم بتضمين اقتباسات ذات صلة للمصادر في ردك باستخدام ترميز [المصدر X].
-        3. إذا كانت المصادر لا تحتوي على معلومات كافية للإجابة على الاستعلام، يرجى ذكر ذلك بوضوح.
-        4. قم بتنسيق ردك بلغة Markdown لقراءة أفضل.
-        5. إذا كان ذلك مناسبًا، قم بهيكلة ردك باستخدام العناوين أو النقاط أو القوائم المرقمة.
-        6. كن موجزًا ولكن شاملًا.
-        7. ركز فقط على المعلومات من المصادر المقدمة.
-      `;
-      
-      // توليد الرد باستخدام Gemini
-      const result = await geminiModel.generateContent(prompt);
-      const response = result.response;
-      
-      return response.text();
-    } catch (error) {
-      console.error('خطأ في توليد الرد باستخدام Gemini:', error);
-      
-      // التعامل مع أنواع الأخطاء المحددة
-      if (error.message.includes('quota')) {
-        throw new Error('تم تجاوز حصة API. يرجى المحاولة مرة أخرى لاحقًا.');
+      // Step 2: If not IT-related, return rejection
+      if (!domainResult.isITRelated) {
+        await this.storeMessageInDatabase(message, domainResult.response, conversationId, false);
+        return {
+          success: true,
+          isITRelated: false,
+          response: domainResult.response
+        };
       }
       
-      throw new Error(`فشل في توليد الرد: ${error.message}`);
+      // Step 3: For IT-related queries, get sources from Tavily
+      const sources = await this.getTavilySources(message);
+      domainResult.sources = sources;
+      
+      // Step 4: Generate response with Gemini AI
+      const aiResponse = await this.generateGeminiResponse(message, sources);
+      domainResult.response = aiResponse;
+      
+      // Step 5: Store in database
+      await this.storeMessageInDatabase(message, aiResponse, conversationId, true, sources);
+      
+      return {
+        success: true,
+        isITRelated: true,
+        response: aiResponse,
+        sources: sources
+      };
+    } catch (error) {
+      console.error('Error processing message with AI:', error);
+      return {
+        success: false,
+        error: true,
+        response: 'I apologize, but I encountered a technical issue while processing your request. Please try again or contact our support team directly for immediate assistance.'
+      };
+    }
+  }
+  
+  /**
+   * Get relevant sources from Tavily AI
+   * @param {string} query - User query
+   * @returns {Promise<Array>} - Array of sources
+   */
+  async getTavilySources(query) {
+    try {
+      const response = await axios.post('https://api.tavily.com/search', {
+        api_key: this.tavilyApiKey,
+        query: query,
+        search_depth: "advanced",
+        include_domains: ["support.microsoft.com", "docs.microsoft.com", "apple.com/support", "support.google.com"],
+        max_results: 3
+      });
+      
+      return response.data.results || [];
+    } catch (error) {
+      console.error('Error fetching sources from Tavily:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Generate response using Gemini AI
+   * @param {string} query - User query
+   * @param {Array} sources - Sources from Tavily
+   * @returns {Promise<string>} - Generated response
+   */
+  async generateGeminiResponse(query, sources) {
+    try {
+      // Format sources for the prompt
+      const sourcesText = sources.length > 0 
+        ? sources.map((s, i) => `Source ${i+1}: ${s.title}\n${s.content}\nURL: ${s.url}`).join('\n\n')
+        : 'No specific sources available.';
+      
+      // Create prompt with IT support context and sources
+      const prompt = `
+        You are an expert IT support specialist with extensive technical knowledge.
+        
+        TASK: Provide a detailed, step-by-step technical response to the following IT support query.
+        
+        USER QUERY: "${query}"
+        
+        REFERENCE SOURCES:
+        ${sourcesText}
+        
+        GUIDELINES:
+        - Focus ONLY on IT support and technical assistance
+        - Base your response on the provided sources when applicable
+        - Include specific diagnostic steps
+        - Suggest practical solutions with clear instructions
+        - Mention potential causes of the issue
+        - Use technical terminology appropriately but explain complex concepts
+        - Format your response with clear headings and numbered steps
+        
+        RESPONSE FORMAT:
+        1. Brief assessment of the issue
+        2. Step-by-step troubleshooting process
+        3. Potential solutions
+        4. Additional recommendations
+      `;
+      
+      const result = await this.model.generateContent(prompt);
+      return result.response.text();
+    } catch (error) {
+      console.error('Error generating response with Gemini:', error);
+      return 'I apologize, but I encountered a technical issue while generating a response. Here are some general troubleshooting steps you can try while I work on fixing this issue.';
+    }
+  }
+  
+  /**
+   * Store message and response in database
+   * @param {string} userMessage - User message
+   * @param {string} aiResponse - AI response
+   * @param {string} conversationId - Conversation ID
+   * @param {boolean} isITRelated - Whether query was IT-related
+   * @param {Array} sources - Sources used (optional)
+   */
+  async storeMessageInDatabase(userMessage, aiResponse, conversationId, isITRelated, sources = []) {
+    try {
+      // Store in database using your DatabaseService
+      if (DatabaseService && DatabaseService.message && DatabaseService.message.create) {
+        // Store user message
+        await DatabaseService.message.create({
+          conversation_id: conversationId,
+          content: userMessage,
+          role: 'user',
+          created_at: new Date()
+        });
+        
+        // Store AI response with metadata
+        await DatabaseService.message.create({
+          conversation_id: conversationId,
+          content: aiResponse,
+          role: 'assistant',
+          metadata: {
+            isITRelated,
+            sources: sources.map(s => ({ title: s.title, url: s.url }))
+          },
+          created_at: new Date()
+        });
+        
+        // Update conversation timestamp
+        await DatabaseService.conversation.update(conversationId, {
+          updated_at: new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Error storing messages in database:', error);
     }
   }
 }
 
-module.exports = AIIntegrationService;
+module.exports = new AIIntegrationService();
