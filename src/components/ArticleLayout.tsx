@@ -3,77 +3,28 @@
 import * as React from "react"
 import { ChevronLeft } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
 import { Article } from "@/types/article"
-import { mockArticles } from "@/data/mock-articles"
 
-/** Props interface for the Articles component */
-interface ArticlesProps {
-  /** Callback function triggered when article expansion state changes */
-  onExpansionChange?: (expanded: boolean) => void
+interface ArticleLayoutProps {
+  articles: Article[]
+  expandedArticle: string | null
+  onArticleClick: (articleId: string) => void
+  onBackClick: () => void
 }
 
-/**
- * Articles Component
- * 
- * A responsive article list and viewer component that displays a list of articles
- * and allows users to expand individual articles for detailed reading.
- * 
- * Features:
- * - Responsive grid layout
- * - Article preview cards with images
- * - Expandable article view
- * - Semantic HTML structure
- * - Keyboard accessibility
- * - Custom event handling
- * 
- * @component
- * @param {ArticlesProps} props - Component props
- */
-export function Articles({ onExpansionChange }: ArticlesProps) {
-  /** State to track the currently expanded article ID */
-  const [expandedArticle, setExpandedArticle] = React.useState<string | null>(null)
-
-  /**
-   * Effect to handle custom expandArticle events
-   * Listens for external triggers to expand articles
-   */
-  React.useEffect(() => {
-    const handleExpandArticle = (event: CustomEvent<{ articleId: string }>) => {
-      setExpandedArticle(event.detail.articleId)
-      onExpansionChange?.(true)
-    }
-
-    window.addEventListener('expandArticle', handleExpandArticle as EventListener)
-    return () => {
-      window.removeEventListener('expandArticle', handleExpandArticle as EventListener)
-    }
-  }, [onExpansionChange])
-
-  /** Handle article card click to expand the article */
-  const handleArticleClick = React.useCallback((articleId: string) => {
-    setExpandedArticle(articleId)
-    onExpansionChange?.(true)
-  }, [onExpansionChange])
-
-  /** Handle back button click to collapse the expanded article */
-  const handleBackClick = React.useCallback(() => {
-    setExpandedArticle(null)
-    onExpansionChange?.(false)
-  }, [onExpansionChange])
-
+export function ArticleLayout({ articles, expandedArticle, onArticleClick, onBackClick }: ArticleLayoutProps) {
   return (
     <ScrollArea className="flex-1 w-full px-4 md:px-8 py-6">
       {expandedArticle ? (
         <div className="max-w-3xl mx-auto">
           <button
-            onClick={handleBackClick}
+            onClick={onBackClick}
             className="mb-4 p-2 hover:bg-accent rounded-full transition-colors"
             aria-label="Back to articles"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          {mockArticles.map((article) => (
+          {articles.map((article) => (
             article.id === expandedArticle && (
               <div key={article.id} className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -99,11 +50,11 @@ export function Articles({ onExpansionChange }: ArticlesProps) {
         </div>
       ) : (
         <div className="max-w-3xl mx-auto space-y-6">
-          {mockArticles.map((article) => (
+          {articles.map((article) => (
             <div
               key={article.id}
               className="p-4 rounded-lg border border-border hover:bg-accent/5 transition-colors cursor-pointer"
-              onClick={() => handleArticleClick(article.id)}
+              onClick={() => onArticleClick(article.id)}
             >
               <div className="flex items-start gap-4">
                 <img

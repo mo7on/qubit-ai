@@ -569,20 +569,19 @@ export function TextArea() {
                 <div className="flex items-center gap-2 md:gap-4">
                   {!isArticlesPage && (
                     <>
-                      {/* Add Qubit AI icon */}
-                      <button
-                        onClick={() => router.push('/articles')}
-                        className="p-2 hover:bg-accent rounded-full transition-colors"
-                        aria-label="Go to articles"
+                      {/* Qubit AI icon - now unclickable */}
+                      <div
+                        className="p-2"
+                        aria-label="Qubit AI icon"
                       >
                         <img
                           src="/qubit-ai.svg"
                           alt="Qubit AI"
                           width={20}
                           height={20}
-                          className="w-5 h-5 cursor-pointer"
+                          className="w-5 h-5"
                         />
-                      </button>
+                      </div>
                       
                       <Popover>
                         <PopoverTrigger asChild>
