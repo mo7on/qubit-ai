@@ -157,73 +157,13 @@ export function TextArea() {
     setText("");
     setMatchingArticles([]); // Clear suggestions after sending message
 
-    // First, get Tavily search results
-    try {
-      const tavilyResponse = await fetch('/api/tavily/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: text }),
-      });
-
-      const tavilyData = await tavilyResponse.json();
-
-      if (tavilyResponse.ok && tavilyData.sources?.length > 0) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant',
-          content: 'Here are some relevant sources I found:',
-          sources: tavilyData.sources
-        }]);
-      }
-    
     // Mark conversation as started when first message is sent
     if (!conversationStarted) {
       setConversationStarted(true);
     }
 
     try {
-      const response = await fetch('/api/gemini/text', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: text }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response from Gemini');
-      }
-
-      const assistantMessage = { role: 'assistant', content: data.data };
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Add a user-friendly error message to the chat
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error processing your request. Please try again later.' 
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
-    } catch (error) {
-      console.error('Error in Tavily search:', error);
-      // Add a user-friendly error message
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error searching for relevant information. Proceeding with direct response.' 
-      }]);
-    }
-
-    // Mark conversation as started when first message is sent
-    if (!conversationStarted) {
-      setConversationStarted(true);
-    }
-
-    try {
+      // Only make one request to Gemini API
       const response = await fetch('/api/gemini/text', {
         method: 'POST',
         headers: {
