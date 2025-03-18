@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { TavilySearchAPIRetriever } = require('tavily-js');
+const tavilyService = require('./tavily.service');
 
 // تهيئة Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -26,17 +27,16 @@ class AIIntegrationService {
       console.log(`جلب المصادر للاستعلام: ${query}`);
       
       const searchOptions = {
-        query,
-        search_depth: options?.searchDepth || "advanced",
-        max_results: options?.maxResults || 5,
-        include_domains: options?.includeDomains || [],
-        exclude_domains: options?.excludeDomains || []
+        searchDepth: options?.searchDepth || "advanced",
+        maxResults: options?.maxResults || 5,
+        includeDomains: options?.includeDomains || [],
+        excludeDomains: options?.excludeDomains || []
       };
       
-      const results = await tavilyRetriever.invoke(searchOptions);
+      const results = await tavilyService.search(query, searchOptions);
       
-      // تنسيق المصادر
-      return results.map(result => ({
+      // Format the sources
+      return results.results.map(result => ({
         title: result.title,
         url: result.url,
         content: result.content,
