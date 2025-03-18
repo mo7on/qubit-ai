@@ -76,7 +76,7 @@ export function TextArea() {
   const [text, setText] = React.useState<string>("");
   const [showHistory, setShowHistory] = React.useState(false);
   const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([]);
-  const [messages, setMessages] = React.useState<{role: string; content: string}[]>([]);
+  const [messages, setMessages] = React.useState<{role: string; content: string; sources?: { url: string; description: string }[]}[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [conversationStarted, setConversationStarted] = React.useState(false);
 
@@ -153,7 +153,68 @@ export function TextArea() {
     setMessages(prev => [...prev, userMessage]);
     setText("");
     setMatchingArticles([]); // Clear suggestions after sending message
+
+    // First, get Tavily search results
+    try {
+      const tavilyResponse = await fetch('/api/tavily/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: text }),
+      });
+
+      const tavilyData = await tavilyResponse.json();
+
+      if (tavilyResponse.ok && tavilyData.sources?.length > 0) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant',
+          content: 'Here are some relevant sources I found:',
+          sources: tavilyData.sources
+        }]);
+      }
     
+    // Mark conversation as started when first message is sent
+    if (!conversationStarted) {
+      setConversationStarted(true);
+    }
+
+    try {
+      const response = await fetch('/api/gemini/text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: text }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response from Gemini');
+      }
+
+      const assistantMessage = { role: 'assistant', content: data.data };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Add a user-friendly error message to the chat
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error processing your request. Please try again later.' 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+    } catch (error) {
+      console.error('Error in Tavily search:', error);
+      // Add a user-friendly error message
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error searching for relevant information. Proceeding with direct response.' 
+      }]);
+    }
+
     // Mark conversation as started when first message is sent
     if (!conversationStarted) {
       setConversationStarted(true);
@@ -457,6 +518,22 @@ export function TextArea() {
                               className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
                             >
                               <MarkdownRenderer content={message.content} />
+                              {message.sources && (
+                                <div className="mt-4 space-y-2">
+                                  {message.sources.map((source, idx) => (
+                                    <a
+                                      key={idx}
+                                      href={source.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-colors"
+                                    >
+                                      <p className="text-sm font-medium">{source.description}</p>
+                                      <p className="text-xs text-muted-foreground truncate">{source.url}</p>
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
