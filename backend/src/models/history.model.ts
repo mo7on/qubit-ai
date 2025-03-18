@@ -1,12 +1,40 @@
-module.exports = (sequelize, Sequelize) => {
-  const History = sequelize.define('history', {
+import { Model, DataTypes, Sequelize } from 'sequelize';
+
+interface HistoryAttributes {
+  id: string;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details?: any;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export class History extends Model<HistoryAttributes> implements HistoryAttributes {
+  public id!: string;
+  public userId!: string;
+  public action!: string;
+  public entityType!: string;
+  public entityId?: string;
+  public details?: any;
+  public ipAddress?: string;
+  public userAgent?: string;
+  
+  // Timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+export default (sequelize: Sequelize) => {
+  History.init({
     id: {
-      type: Sequelize.UUID,
-      defaultValue: Sequelize.UUIDV4,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
     userId: {
-      type: Sequelize.UUID,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: 'users',
@@ -14,29 +42,33 @@ module.exports = (sequelize, Sequelize) => {
       }
     },
     action: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
       allowNull: false
     },
     entityType: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
       allowNull: false
     },
     entityId: {
-      type: Sequelize.UUID,
+      type: DataTypes.UUID,
       allowNull: true
     },
     details: {
-      type: Sequelize.JSON,
+      type: DataTypes.JSON,
       allowNull: true
     },
     ipAddress: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
       allowNull: true
     },
     userAgent: {
-      type: Sequelize.STRING,
+      type: DataTypes.STRING,
       allowNull: true
     }
+  }, {
+    sequelize,
+    tableName: 'history',
+    modelName: 'history'
   });
   
   return History;
