@@ -149,6 +149,33 @@ Please feel free to ask any IT-related technical questions, and I'll provide det
       };
     }
   }
+  
+  /**
+   * Get the domain category of an IT support query
+   * @param {string} query - User query
+   * @returns {string|null} - Category name or null if not IT-related
+   */
+  static getITSupportCategory(query) {
+    if (!query || typeof query !== 'string') {
+      return null;
+    }
+    
+    const lowercaseQuery = query.toLowerCase();
+    
+    // Check each domain category
+    for (const [category, keywords] of Object.entries(this.itSupportDomains)) {
+      if (keywords.some(keyword => lowercaseQuery.includes(keyword.toLowerCase()))) {
+        return category;
+      }
+    }
+    
+    // Check if it matches any pattern but doesn't have a specific category
+    if (this.technicalQuestionPatterns.some(pattern => pattern.test(lowercaseQuery))) {
+      return 'general';
+    }
+    
+    return null;
+  }
 }
 
 // Create a singleton instance
