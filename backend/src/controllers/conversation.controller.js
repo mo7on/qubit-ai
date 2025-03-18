@@ -1,5 +1,6 @@
 const DatabaseService = require('../services/database.service');
 const AIIntegrationService = require('../services/ai-integration.service');
+const DomainDetectionService = require('../services/domain-detection.service');
 
 /**
  * Conversation controller
@@ -83,42 +84,64 @@ exports.createMessage = async (req, res) => {
     const { conversationId } = req.params;
     const { content, role } = req.body;
     
-    // If this is a user message, process it through the AI pipeline
+    // Create new user message
+    const userMessage = await DatabaseService.message.create({
+      conversation_id: conversationId,
+      content,
+      role: role || 'user',
+      created_at: new Date()
+    });
+    
+    // If this is a user message, generate an AI response
     if (role === 'user' || !role) {
-      const aiResult = await AIIntegrationService.processMessage(content, conversationId);
+      // Check if the query is related to IT support
+      const isITSupportQuery = DomainDetectionService.isITSupportDomain(content);
       
-      // Return both the user message and AI response
+      let aiResponse;
+      let sources = [];
+      
+      if (isITSupportQuery) {
+        // Generate AI response with sources for IT support query
+        const result = await AIIntegrationService.processMessageWithSources(content);
+        aiResponse = result.response;
+        sources = result.sources;
+      } else {
+        // Professional response for non-IT support queries
+        aiResponse = DomainDetectionService.getNonITSupportResponse();
+      }
+      
+      // Create AI response message with metadata including sources
+      const assistantMessage = await DatabaseService.message.create({
+        conversation_id: conversationId,
+        content: aiResponse,
+        role: 'assistant',
+        metadata: {
+          isITSupportQuery,
+          sources: sources.map(s => ({ title: s.title, url: s.url }))
+        },
+        created_at: new Date()
+      });
+      
+      // Return both messages and sources
       return res.status(201).json({
         status: 'success',
         data: {
-          userMessage: {
-            conversation_id: conversationId,
-            content,
-            role: 'user'
-          },
-          aiResponse: {
-            conversation_id: conversationId,
-            content: aiResult.response,
-            role: 'assistant',
-            isITRelated: aiResult.isITRelated,
-            sources: aiResult.sources || []
-          }
+          userMessage,
+          assistantMessage,
+          sources: isITSupportQuery ? sources : []
         }
       });
     }
     
-    // For non-user messages (e.g., system messages)
-    const message = await DatabaseService.message.create({
-      conversation_id: conversationId,
-      content,
-      role,
-      created_at: new Date()
+    // Update conversation's updated_at timestamp
+    await DatabaseService.conversation.update(conversationId, {
+      updated_at: new Date()
     });
     
     res.status(201).json({
       status: 'success',
       data: {
-        message
+        message: userMessage
       }
     });
   } catch (error) {
@@ -126,6 +149,39 @@ exports.createMessage = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Error creating message'
+    });
+  }
+};
+
+// Add a new endpoint to get sources for a specific message
+exports.getMessageSources = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    
+    // Get message from database
+    const message = await DatabaseService.message.getById(messageId);
+    
+    if (!message) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Message not found'
+      });
+    }
+    
+    // Extract sources from message metadata
+    const sources = message.metadata && message.metadata.sources ? message.metadata.sources : [];
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        sources
+      }
+    });
+  } catch (error) {
+    console.error('Error getting message sources:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error retrieving message sources'
     });
   }
 };

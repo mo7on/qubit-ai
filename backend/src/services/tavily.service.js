@@ -1,40 +1,56 @@
-const { tavily } = require('@tavily/core');
-const dotenv = require('dotenv');
+const axios = require('axios');
 
-// Load environment variables
-dotenv.config();
-
+/**
+ * Service for interacting with Tavily AI for research and source retrieval
+ */
 class TavilyService {
   constructor() {
-    this.client = tavily({ 
-      apiKey: process.env.TAVILY_API_KEY 
-    });
+    this.apiKey = process.env.TAVILY_API_KEY;
+    this.baseUrl = 'https://api.tavily.com';
   }
 
   /**
-   * Search for information using Tavily AI
-   * @param {string} query - User query
+   * Search for sources related to a query
+   * @param {string} query - The search query
    * @param {Object} options - Search options
-   * @returns {Promise<Object>} - Search results
+   * @returns {Promise<Array>} - Array of sources
    */
-  async search(query, options = {}) {
+  async searchSources(query, options = {}) {
     try {
-      const searchOptions = {
-        query,
-        search_depth: options?.searchDepth || "advanced",
-        max_results: options?.maxResults || 5,
-        include_domains: options?.includeDomains || [],
-        exclude_domains: options?.excludeDomains || []
+      const defaultOptions = {
+        search_depth: "advanced",
+        include_domains: ["support.microsoft.com", "docs.microsoft.com", "apple.com/support", 
+                         "support.google.com", "help.ubuntu.com", "support.hp.com", 
+                         "support.dell.com", "technet.microsoft.com"],
+        max_results: 5
       };
+
+      const searchOptions = { ...defaultOptions, ...options };
       
-      const response = await this.client.search(searchOptions);
-      return response;
+      const response = await axios.post(`${this.baseUrl}/search`, {
+        api_key: this.apiKey,
+        query: query,
+        ...searchOptions
+      });
+      
+      if (response.data && response.data.results) {
+        // Format the sources for easier consumption
+        return response.data.results.map(source => ({
+          title: source.title,
+          content: source.content,
+          url: source.url,
+          score: source.score,
+          published_date: source.published_date
+        }));
+      }
+      
+      return [];
     } catch (error) {
-      console.error('Error in Tavily search:', error);
-      throw new Error(`Failed to fetch results from Tavily: ${error.message}`);
+      console.error('Error fetching sources from Tavily:', error.message);
+      // Return empty array on error
+      return [];
     }
   }
 }
 
-// Export a singleton instance
 module.exports = new TavilyService();
