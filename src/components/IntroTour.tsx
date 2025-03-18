@@ -56,57 +56,62 @@ export function IntroTour() {
   }
 
   return (
-    <Joyride
-      steps={steps}
-      run={run}
-      continuous
-      showSkipButton
-      showProgress
-      hideCloseButton
-      disableCloseOnEsc
-      disableOverlayClose
-      spotlightClicks
-      styles={{
-        options: {
-          primaryColor: "hsl(var(--primary))",
-          backgroundColor: "#000000",
-          textColor: "white",
-          zIndex: 1000,
-          arrowColor: "hsl(var(--primary))",
-        },
-        spotlight: {
-          borderRadius: "12px",
-        },
-        tooltip: {
-          borderRadius: "16px",
-          backgroundColor: "#000000",
-          border: "2px solid hsl(var(--primary))",
-          boxShadow: "0 4px 12px rgba(255, 255, 255, 0.15)",
-        },
-        tooltipContent: {
-          padding: "20px",
-          color: "white",
-          fontSize: "0.95rem",
-          lineHeight: "1.5",
-        },
-        tooltipTitle: {
-          color: "white",
-          fontWeight: "600",
-        },
-        buttonNext: {
-          backgroundColor: "hsl(var(--primary))",
-          borderRadius: "8px",
-          padding: "8px 16px",
-        },
-        buttonBack: {
-          color: "hsl(var(--primary))",
-          marginRight: "8px",
-        },
-        buttonSkip: {
-          color: "#666",
-        },
-      }}
-      callback={handleJoyrideCallback}
-    />
-  )
+    <div className="absolute inset-0 z-50 pointer-events-none">
+      <Joyride
+        steps={steps}
+        run={run}
+        continuous
+        showSkipButton
+        showProgress
+        hideCloseButton
+        disableCloseOnEsc
+        disableOverlayClose
+        spotlightClicks
+        styles={{
+          options: {
+            primaryColor: "hsl(var(--primary))",
+            backgroundColor: "#000000",
+            textColor: "white",
+            zIndex: 1000,
+            arrowColor: "hsl(var(--primary))",
+            overlayColor: 'rgba(0, 0, 0, 0.5)',
+          },
+          spotlight: {
+            borderRadius: "12px",
+          },
+          tooltip: {
+            borderRadius: "16px",
+            backgroundColor: "#000000",
+            border: "2px solid hsl(var(--primary))",
+            boxShadow: "0 4px 12px rgba(255, 255, 255, 0.15)",
+          },
+          tooltipContent: {
+            padding: "20px",
+            color: "white",
+            fontSize: "0.95rem",
+            lineHeight: "1.5",
+          },
+          tooltipTitle: {
+            color: "white",
+            fontWeight: "600",
+          },
+          buttonNext: {
+            backgroundColor: "hsl(var(--primary))",
+            borderRadius: "8px",
+            padding: "8px 16px",
+          },
+          buttonBack: {
+            color: "hsl(var(--primary))",
+            marginRight: "8px",
+          },
+          buttonSkip: {
+            color: "#666",
+          },
+        }}
+        callback={handleJoyrideCallback}
+      />
+      
+      {/* No welcome headings here */}
+    </div>
+  );
 }

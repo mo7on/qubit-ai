@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { IntroTour } from "@/components/IntroTour"
-import { ArticlesTour } from "@/components/ArticlesTour"
+// Removed ArticlesTour import
 import { MessageList } from "./MessageList"
 import { MessageInput } from "./MessageInput"
 
@@ -102,12 +102,7 @@ export function ChatInterface() {
             aria-label="Chat interface"
           >
             <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted ? 'h-full justify-between' : ''}`}>
-              {!conversationStarted && (
-                <div className="w-full text-center mb-6">
-                  <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
-                  <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
-                </div>
-              )}
+              {/* Welcome heading removed */}
               
               <MessageList 
                 messages={messages} 
@@ -125,7 +120,10 @@ export function ChatInterface() {
           </div>
         </div>
       ) : (
-        <ArticlesTour />
+        // Removed ArticlesTour component
+        <div className="articles-page-container">
+          {/* Replace with appropriate content for articles page */}
+        </div>
       )}
     </>
   );

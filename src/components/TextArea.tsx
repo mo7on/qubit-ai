@@ -8,7 +8,6 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { mockTickets } from "@/lib/mock-tickets"
 import { mockArticles } from "@/data/mock-articles"
 import { IntroTour } from "@/components/IntroTour"
-import { ArticlesTour } from "@/components/ArticlesTour"
 import {
   Popover,
   PopoverContent,
@@ -137,13 +136,17 @@ export function TextArea() {
   const handleArticleSuggestionClick = React.useCallback((articleId: string) => {
     setText("");
     setMatchingArticles([]);
+    
+    // Navigate to the article page with the article ID
+    router.push(`/articles/${articleId}`);
+    
     // Dispatch custom event to expand the article
     window.dispatchEvent(
       new CustomEvent('expandArticle', {
         detail: { articleId }
       })
     );
-  }, []);
+  }, [router]);
 
   const handleSendMessage = React.useCallback(async () => {
     if (!text.trim() || isLoading) return;
@@ -481,12 +484,7 @@ export function TextArea() {
             aria-label="Chat interface"
           >
             <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted ? 'h-full justify-between' : ''}`}>
-              {!conversationStarted && (
-                <div className="w-full text-center mb-6">
-                  <h1 className="text-2xl md:text-4xl font-bold text-primary mb-2">Welcome to Qub-IT!</h1>
-                  <h2 className="text-lg md:text-xl text-muted-foreground mb-8">The first ever IT Assistant AI chatbot.</h2>
-                </div>
-              )}
+              {/* Welcome headings removed */}
               
               {/* Conversation Area - Separate from input form */}
               {(messages.length > 0 || isLoading) && (
@@ -671,7 +669,7 @@ export function TextArea() {
                             {matchingArticles.map((article) => (
                               <div
                                 key={article.id}
-                                onClick={() => {}}
+                                onClick={() => handleArticleSuggestionClick(article.id)}
                                 className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
                                 role="option"
                                 aria-selected="false"
@@ -701,7 +699,10 @@ export function TextArea() {
           </div>
         </div>
       ) : (
-        <ArticlesTour />
+        // Removed ArticlesTour component
+        <div className="articles-page-container">
+          {/* Replace with appropriate content for articles page */}
+        </div>
       )}
     </>
   );
