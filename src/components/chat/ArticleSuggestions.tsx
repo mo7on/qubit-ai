@@ -2,21 +2,16 @@
 
 import * as React from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-interface Article {
-  id: string;
-  title: string;
-  description: string;
-}
+import { mockArticles } from "@/data/mock-articles"
 
 interface ArticleSuggestionsProps {
-  matchingArticles: Article[];
+  articles: typeof mockArticles;
   onArticleClick: (articleId: string) => void;
 }
 
-export function ArticleSuggestions({ matchingArticles, onArticleClick }: ArticleSuggestionsProps) {
-  if (matchingArticles.length === 0) return null;
-
+export function ArticleSuggestions({ articles, onArticleClick }: ArticleSuggestionsProps) {
+  if (articles.length === 0) return null;
+  
   return (
     <div 
       className="absolute bottom-full left-0 w-full mb-2 bg-background border border-border rounded-lg shadow-lg"
@@ -25,11 +20,12 @@ export function ArticleSuggestions({ matchingArticles, onArticleClick }: Article
     >
       <ScrollArea className="max-h-[200px]">
         <div className="p-2 space-y-2">
-          {matchingArticles.map((article) => (
+          {articles.map((article, index) => (
             <div
               key={article.id}
               onClick={() => onArticleClick(article.id)}
-              className="p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+              className="p-2 hover:bg-accent/50 rounded-md cursor-pointer transition-all duration-200 hover:translate-y-[-2px] animate-in fade-in-50 duration-300"
+              style={{ animationDelay: `${index * 50}ms` }}
               role="option"
               aria-selected="false"
             >
