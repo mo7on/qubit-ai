@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { User, ScrollText } from "lucide-react"
+import { User, ScrollText, Info } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockSystemInfo, languageOptions } from "@/data/mock-system"
 import { ModeToggle } from "./ModeToggle"
 import {
   Popover,
@@ -60,14 +59,17 @@ interface UserInfo {
  */
 export function ProfileMenu() {
   // System and device information state
-  const [systemInfo, setSystemInfo] = React.useState<SystemInfo>(mockSystemInfo)
+  const [systemInfo, setSystemInfo] = React.useState<SystemInfo>({
+    manufacturer: '',
+    model: '',
+    language: 'en-US'
+  })
+  
   const [deviceInfo, setDeviceInfo] = React.useState<SystemInfo>({
     manufacturer: '',
     model: '',
-    language: mockSystemInfo.language
+    language: 'en-US'
   })
-
-
   
   // Add nameInfo state
   const [nameInfo, setNameInfo] = React.useState<UserInfo>({ firstName: '' })
@@ -76,7 +78,7 @@ export function ProfileMenu() {
   const [tempDeviceInfo, setTempDeviceInfo] = React.useState<SystemInfo>({
     manufacturer: '',
     model: '',
-    language: mockSystemInfo.language
+    language: 'en-US'
   })
   const [tempNameInfo, setTempNameInfo] = React.useState<UserInfo>({ firstName: '' })
   
@@ -85,6 +87,7 @@ export function ProfileMenu() {
   const [isDeviceOpen, setIsDeviceOpen] = React.useState(false)
   const [isNameOpen, setIsNameOpen] = React.useState(false)
   const [isThemeOpen, setIsThemeOpen] = React.useState(false)
+  const [isAboutOpen, setIsAboutOpen] = React.useState(false)
   
   // Hooks
   const router = useRouter()
@@ -131,7 +134,7 @@ export function ProfileMenu() {
         aria-label="Profile options"
         onInteractOutside={(e) => {
           // Prevent closing the menu if any popover is open
-          if (isNameOpen || isDeviceOpen || isThemeOpen) {
+          if (isNameOpen || isDeviceOpen || isThemeOpen || isAboutOpen) {
             e.preventDefault()
           }
         }}
@@ -228,7 +231,7 @@ export function ProfileMenu() {
             </Popover>
           </div>
           
-          {/* Keep only this Device section */}
+          {/* Device section */}
           <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200" onClick={() => setIsDeviceOpen(true)}>
             <span className="text-sm">Device</span>
             <Popover open={isDeviceOpen} onOpenChange={setIsDeviceOpen}>
@@ -281,6 +284,7 @@ export function ProfileMenu() {
                     onClick={() => {
                       setTempDeviceInfo({ manufacturer: '', model: '', language: systemInfo.language })
                       setDeviceInfo({ manufacturer: '', model: '', language: systemInfo.language })
+                      setIsDeviceOpen(false)
                     }}
                   >
                     Clear
@@ -351,9 +355,40 @@ export function ProfileMenu() {
               </PopoverContent>
             </Popover>
           </div>
-          {/* Remove Articles section and keep About */}
-          <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200">
+          {/* About section with functionality */}
+          <div className="flex justify-between items-center hover:bg-accent/50 rounded-md px-2 py-1.5 cursor-pointer transition-colors duration-200" onClick={() => setIsAboutOpen(true)}>
             <span className="text-sm">About</span>
+            <Popover open={isAboutOpen} onOpenChange={setIsAboutOpen}>
+              <PopoverTrigger asChild>
+                <div className="text-sm font-medium text-right">
+                  <Info className="h-4 w-4" />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-4" align="end">
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">About Qubit AI</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Qubit AI is an intelligent assistant designed to help with IT support and technical questions.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Version: 1.0.0
+                  </p>
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent event bubbling
+                        setIsAboutOpen(false);
+                        setIsMenuOpen(true); // Keep the main menu open
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <DropdownMenuSeparator />

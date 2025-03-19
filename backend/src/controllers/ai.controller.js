@@ -262,7 +262,7 @@ exports.analyzeImage = async (req, res) => {
     );
     
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro-vision",
+      model: "gemini-2.0-flash",
       generationConfig: options?.generationConfig || {
         temperature: 0.4,
         topP: 0.95,

@@ -12,6 +12,9 @@ import { ChatInput } from "@/components/chat/ChatInput"
 import { CameraModal } from "@/components/chat/CameraModal"
 import { ImagePromptModal } from "@/components/chat/ImagePromptModal"
 
+// Add this import at the top with other imports
+import { useTheme } from "next-themes"
+
 /** Interface for upload options in the text area component */
 interface UploadOption {
   value: "document" | "photo"

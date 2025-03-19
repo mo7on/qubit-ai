@@ -3,7 +3,7 @@
  */
 module.exports = {
   gemini: {
-    model: "gemini-pro",
+    model: "gemini-2.0-flash",
     temperature: 0.7,
     topP: 0.8,
     maxOutputTokens: 2048,
