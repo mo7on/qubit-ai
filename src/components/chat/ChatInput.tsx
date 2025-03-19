@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ArticleSuggestions } from "@/components/chat/ArticleSuggestions"
-import { useChatContext } from "./ChatContext"
+import { useChatContext } from "@/components/chat/ChatContext"
 
 // Add interface for ticket history items
 interface TicketHistoryItem {
