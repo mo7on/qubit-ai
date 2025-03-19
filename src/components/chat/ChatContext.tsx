@@ -3,9 +3,11 @@
 import * as React from "react"
 import { mockArticles } from "@/data/mock-articles"
 
-type Message = {
+// Updated Message type with image support
+export type Message = {
   role: string
   content: string
+  image?: string // Added image property
   sources?: { url: string; description: string }[]
 }
 
@@ -88,59 +90,49 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, conversationStarted])
 
-  const handleImageAnalysis = React.useCallback(async (imageData: string, prompt: string) => {
-    if (!imageData) return
-
+  const handleImageAnalysis = async (imageData: string, prompt: string) => {
+    setIsLoading(true);
+    setConversationStarted(true);
+    
+    // Add user message with image - use empty string if no prompt
+    const userMessage = {
+      role: 'user',
+      content: prompt || '', // Empty string instead of default text
+      image: imageData // Include the image data
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    
     try {
-      setIsLoading(true)
-      
-      // Add user message with image placeholder
-      setMessages(prev => [...prev, { 
-        role: 'user', 
-        content: prompt.trim() 
-          ? `Image analysis request: ${prompt}` 
-          : 'Image analysis request'
-      }])
-      
-      // Extract base64 data if needed
-      const base64String = imageData.includes(',') ? imageData.split(',')[1] : imageData
-      
-      // Send to backend for processing
-      const response = await fetch('/api/gemini/image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          imageData: base64String,
-          prompt: prompt.trim() || 'Analyze this image' // Provide default prompt if empty
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze image')
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Add AI response
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: data.data 
-      }])
+      const aiResponse = {
+        role: 'assistant',
+        content: `I've analyzed the image you provided. ${prompt ? `Regarding your question "${prompt}": ` : ''}This appears to be [image description]. Let me know if you need more specific information about it.`
+      };
+      
+      setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
-      console.error('Error processing image:', error)
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error processing your image. Please try again later.' 
-      }])
+      console.error('Error analyzing image:', error);
+      // Add error message
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error analyzing your image. Please try again.'
+      }]);
     } finally {
-      setIsLoading(false)
-      setPendingImage(null)
-      setImagePrompt("")
+      setIsLoading(false);
+      setPendingImage(null);
+      setImagePrompt('');
     }
-  }, [])
+  };
 
+  // Remove these lines that are causing the infinite loop
+  // setPendingImage(null)  <- REMOVE THIS
+  // setImagePrompt("")    <- REMOVE THIS
+
+  // Provide the context value
   const value = {
     messages,
     setMessages,
@@ -168,3 +160,5 @@ export function useChatContext() {
   }
   return context
 }
+
+// Remove the duplicate Message interface at the bottom

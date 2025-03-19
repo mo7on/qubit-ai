@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Camera, Send, Paperclip, ScrollText, History, User, Bot, X, Plus } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
+import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { mockTickets } from "@/lib/mock-tickets"
@@ -55,6 +56,9 @@ export function TextArea() {
   const [showHistory, setShowHistory] = React.useState(false);
   const [matchingArticles, setMatchingArticles] = React.useState<typeof mockArticles>([]);
   
+  // Add state for zoomed image
+  const [zoomedImage, setZoomedImage] = React.useState<string | null>(null);
+  
   // File upload related state and refs
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [imagePromptOpen, setImagePromptOpen] = React.useState(false);
@@ -72,6 +76,20 @@ export function TextArea() {
     handleSendMessage,
     handleImageAnalysis
   } = useChatContext();
+
+  /**
+   * Handles image click to zoom
+   */
+  const handleImageClick = React.useCallback((imageSrc: string) => {
+    setZoomedImage(imageSrc);
+  }, []);
+
+  /**
+   * Handles closing the zoomed image
+   */
+  const handleCloseZoom = React.useCallback(() => {
+    setZoomedImage(null);
+  }, []);
   
   // Navigation hooks
   const router = useRouter();
@@ -282,6 +300,24 @@ export function TextArea() {
                             <div
                               className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
                             >
+                              {/* Display image if message has image data */}
+                              {message.image && (
+                                <div className="mb-3">
+                                  <div 
+                                    className="relative rounded-lg overflow-hidden inline-block cursor-pointer"
+                                    onClick={() => handleImageClick(message.image as string)}
+                                  >
+                                    <Image 
+                                      src={message.image}
+                                      alt="Uploaded image"
+                                      width={150}
+                                      height={150}
+                                      className="object-cover rounded-lg border border-border transition-transform hover:scale-105"
+                                      style={{ maxHeight: '150px', maxWidth: '150px' }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
                               <MarkdownRenderer content={message.content} />
                               {message.sources && (
                                 <div className="mt-4 space-y-2">
@@ -544,6 +580,27 @@ export function TextArea() {
           </div>
         </div>
       )}
-    </>
+
+      {/* Image Zoom Overlay */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out"
+          onClick={handleCloseZoom}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] animate-in zoom-in-90 duration-300 ease-in-out">
+            <Image
+              src={zoomedImage as string}
+              alt="Enlarged image"
+              width={800}
+              height={600}
+              className="object-contain rounded-lg max-h-[90vh]"
+            />
+          </div>
+        </div>
+      )}
+  </>
   );
 }
