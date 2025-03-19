@@ -64,12 +64,12 @@ export function ImageUploadModal({ isOpen, image, onClose, onSubmit }: ImageUplo
             </button>
           </div>
           <div className="space-y-4">
-            <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
+            <div className="relative rounded-lg overflow-hidden bg-muted max-h-[400px] flex items-center justify-center">
               {image && (
                 <img 
                   src={image} 
                   alt="Preview" 
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="max-w-full max-h-[400px] object-contain"
                 />
               )}
             </div>

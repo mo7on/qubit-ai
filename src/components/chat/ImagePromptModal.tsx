@@ -82,12 +82,12 @@ export function ImagePromptModal({
             </button>
           </div>
           <div className="space-y-4">
-            <div className="aspect-video relative rounded-lg overflow-hidden bg-muted animate-in fade-in-50 zoom-in-95 duration-300" style={{ animationDelay: '150ms' }}>
+            <div className="relative rounded-lg overflow-hidden bg-muted max-h-[400px] flex items-center justify-center animate-in fade-in-50 zoom-in-95 duration-300" style={{ animationDelay: '150ms' }}>
               {pendingImage && (
                 <img 
                   src={pendingImage} 
                   alt="Preview" 
-                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                  className="max-w-full max-h-[400px] object-contain transition-opacity duration-300"
                 />
               )}
             </div>

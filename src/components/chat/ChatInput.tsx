@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Send, Plus, X, Paperclip, History } from "lucide-react"
+import { useTheme } from "next-themes"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
 import { mockArticles } from "@/data/mock-articles"
@@ -33,6 +34,8 @@ export function ChatInput({
   handleArticleSuggestionClick,
   isArticlesPage
 }: ChatInputProps) {
+  const { theme } = useTheme();
+  
   const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
   }, [setText]);
@@ -55,7 +58,7 @@ export function ChatInput({
               aria-label="Qubit AI icon"
             >
               <img
-                src="/qubit-ai.svg"
+                src={theme === "light" ? "/qubit-ai-dark.svg" : "/qubit-ai.svg"}
                 alt="Qubit AI"
                 width={20}
                 height={20}
