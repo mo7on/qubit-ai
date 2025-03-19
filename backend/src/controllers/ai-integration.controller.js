@@ -59,11 +59,10 @@ exports.getSources = async (req, res) => {
     });
   }
 };
-
 /**
- * معالجة رسالة المستخدم وإرجاع رد مع مصادر
- * @param {Object} req - كائن الطلب
- * @param {Object} res - كائن الاستجابة
+ * Process user message and return response with sources
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
  */
 exports.processUserMessage = async (req, res) => {
   try {
@@ -72,26 +71,26 @@ exports.processUserMessage = async (req, res) => {
     if (!message) {
       return res.status(400).json({ 
         status: 'error',
-        message: 'الرسالة مطلوبة' 
+        message: 'Message is required' 
       });
     }
     
-    console.log(`معالجة رسالة المستخدم: ${message}`);
+    console.log(`Processing user message: ${message}`);
     
-    // الحصول على المصادر من Tavily AI
+    // Get sources from Tavily AI
     const sources = await AIIntegrationService.getSources(message, options?.tavily);
     
     if (!sources || sources.length === 0) {
       return res.status(404).json({
         status: 'error',
-        message: 'لم يتم العثور على مصادر ذات صلة. يرجى إعادة صياغة السؤال.'
+        message: 'No relevant sources found. Please rephrase your question.'
       });
     }
     
-    // إنشاء رد باستخدام Gemini AI والمصادر
+    // Generate response using Gemini AI and sources
     const response = await AIIntegrationService.generateResponse(message, sources, options?.gemini);
     
-    // إرجاع النتيجة المجمعة
+    // Return combined result
     res.status(200).json({
       status: 'success',
       data: {
@@ -105,18 +104,18 @@ exports.processUserMessage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('خطأ في معالجة رسالة المستخدم:', error);
+    console.error('Error processing user message:', error);
     
-    // تحديد رمز الحالة المناسب
+    // Determine appropriate status code
     let statusCode = 500;
-    let errorMessage = 'حدث خطأ أثناء معالجة الرسالة';
+    let errorMessage = 'Error occurred while processing message';
     
     if (error.message.includes('quota')) {
       statusCode = 429;
-      errorMessage = 'تم تجاوز حصة API. يرجى المحاولة مرة أخرى لاحقًا.';
+      errorMessage = 'API quota exceeded. Please try again later.';
     } else if (error.message.includes('sources')) {
       statusCode = 502;
-      errorMessage = 'خطأ في جلب المصادر. يرجى المحاولة مرة أخرى لاحقًا.';
+      errorMessage = 'Error fetching sources. Please try again later.';
     }
     
     res.status(statusCode).json({ 

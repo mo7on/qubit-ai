@@ -27,7 +27,7 @@ export class History extends Model<HistoryAttributes> implements HistoryAttribut
 }
 
 export default (sequelize: Sequelize) => {
-  History.init({
+  (History as any).init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,

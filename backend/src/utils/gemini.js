@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Function to generate text response from Gemini
 async function generateTextResponse(prompt) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
@@ -20,7 +20,7 @@ async function generateTextResponse(prompt) {
 async function analyzeImageAndGenerateResponse(imageData, prompt) {
   try {
     // For image processing, we use the multimodal model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     
     // Prepare the parts with both text and image
     const parts = [

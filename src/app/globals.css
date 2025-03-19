@@ -124,3 +124,57 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add these animation utilities to your existing globals.css */
+
+/* Smooth transitions for all interactive elements */
+button, a, input, textarea, select {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Improved hover effects */
+button:not(:disabled):hover, 
+a:hover {
+  transform: translateY(-2px);
+}
+
+/* Improved focus states */
+button:focus-visible, 
+a:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible, 
+select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Improved active states */
+button:active:not(:disabled), 
+a:active {
+  transform: translateY(1px);
+}
+
+/* Transition for content changes */
+.transition-all-300 {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Scale animation for hover effects */
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Pulse animation for loading states */
+@keyframes gentle-pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.gentle-pulse {
+  animation: gentle-pulse 2s infinite ease-in-out;
+}
