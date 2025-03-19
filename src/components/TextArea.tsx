@@ -65,6 +65,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [imagePromptOpen, setImagePromptOpen] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   
   // Define emptyTickets array for history
   const emptyTickets: TicketHistoryItem[] = [];
@@ -81,6 +82,15 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
     handleSendMessage,
     handleImageAnalysis
   } = useChatContext();
+
+  /**
+   * Scroll to bottom of messages when new messages arrive
+   */
+  React.useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   /**
    * Handles image click to zoom
@@ -304,10 +314,10 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                 </div>
               )}
               
-              {/* Conversation Area - Separate from input form */}
+              {/* Conversation Area - Improved message layout */}
               {(messages.length > 0 || isLoading) && (
                 <div 
-                  className="w-full flex-1 mb-2.5 md:mb-3 flex flex-col"
+                  className="w-full flex-1 mb-4 flex flex-col"
                   role="log"
                   aria-label="Conversation history"
                 >
@@ -317,68 +327,128 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                         {messages.map((message, index) => (
                           <div
                             key={index}
-                            className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-3 duration-300"
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in-0 slide-in-from-bottom-3 duration-300`}
                           >
-                            <div className="flex-shrink-0">
-                              {message.role === 'user' ? (
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                                  <User className="w-5 h-5 text-foreground" aria-hidden="true" />
-                                </div>
-                              ) : (
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                                  <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
-                                </div>
-                              )}
-                            </div>
-                            <div
-                              className="flex-1 max-w-[85%] text-foreground p-2 rounded-lg"
-                            >
-                              {/* Display image if message has image data */}
-                              {message.image && (
-                                <div className="mb-3">
-                                  <div 
-                                    className="relative rounded-lg overflow-hidden inline-block cursor-pointer"
-                                    onClick={() => handleImageClick(message.image as string)}
-                                  >
-                                    <Image 
-                                      src={message.image}
-                                      alt="Uploaded image"
-                                      width={150}
-                                      height={150}
-                                      className="object-cover rounded-lg border border-border transition-transform hover:scale-105"
-                                      style={{ maxHeight: '150px', maxWidth: '150px' }}
+                            {/* AI Message */}
+                            {message.role === 'assistant' && (
+                              <div className="flex items-start gap-3 max-w-[80%]">
+                                <div className="flex-shrink-0">
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10">
+                                    {/* Use Qubit AI logo instead of Bot icon */}
+                                    <img
+                                      src={theme === 'light' ? "/qubit-ai-dark.svg" : "/qubit-ai.svg"}
+                                      alt="Qubit AI"
+                                      width={20}
+                                      height={20}
+                                      className="w-5 h-5"
                                     />
                                   </div>
                                 </div>
-                              )}
-                              <MarkdownRenderer content={message.content} />
-                              {message.sources && (
-                                <div className="mt-4 space-y-2">
-                                  {message.sources.map((source, idx) => (
-                                    <a
-                                      key={idx}
-                                      href={source.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                                    >
-                                      <p className="text-sm font-medium">{source.description}</p>
-                                      <p className="text-xs text-muted-foreground truncate">{source.url}</p>
-                                    </a>
-                                  ))}
+                                <div className="flex-1 text-foreground">
+                                  {/* Add title for AI message with centered alignment */}
+                                  <div className="font-medium mb-1 flex items-center">Qubit AI</div>
+                                  {/* Display image if message has image data */}
+                                  {message.image && (
+                                    <div className="mb-3">
+                                      <div 
+                                        className="relative rounded-lg overflow-hidden inline-block cursor-pointer"
+                                        onClick={() => handleImageClick(message.image as string)}
+                                      >
+                                        <Image 
+                                          src={message.image}
+                                          alt="Uploaded image"
+                                          width={150}
+                                          height={150}
+                                          className="object-cover rounded-lg border border-border transition-transform hover:scale-105"
+                                          style={{ maxHeight: '150px', maxWidth: '150px' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                                    <MarkdownRenderer content={message.content} />
+                                  </div>
+                                  {message.sources && (
+                                    <div className="mt-4 space-y-2">
+                                      {message.sources.map((source, idx) => (
+                                        <a
+                                          key={idx}
+                                          href={source.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                                        >
+                                          <p className="text-sm font-medium">{source.description}</p>
+                                          <p className="text-xs text-muted-foreground truncate">{source.url}</p>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
+                            
+                            {/* User Message */}
+                            {message.role === 'user' && (
+                              <div className="flex items-start gap-3 max-w-[80%]">
+                                <div className="flex-1 text-foreground">
+                                  {/* Add title for User message with centered alignment and dynamic name */}
+                                  <div className="font-medium mb-1 flex items-center justify-end">
+                                    {/* Fix: Use a safe approach to access name property or default to "You" */}
+                                    {"You"}
+                                  </div>
+                                  {/* Display image if message has image data */}
+                                  {message.image && (
+                                    <div className="mb-3">
+                                      <div 
+                                        className="relative rounded-lg overflow-hidden inline-block cursor-pointer"
+                                        onClick={() => handleImageClick(message.image as string)}
+                                      >
+                                        <Image 
+                                          src={message.image}
+                                          alt="Uploaded image"
+                                          width={150}
+                                          height={150}
+                                          className="object-cover rounded-lg border border-border transition-transform hover:scale-105"
+                                          style={{ maxHeight: '150px', maxWidth: '150px' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="prose prose-sm dark:prose-invert max-w-none text-right">
+                                    <MarkdownRenderer content={message.content} />
+                                  </div>
+                                </div>
+                                <div className="flex-shrink-0">
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10">
+                                    <User className="w-5 h-5 text-primary" aria-hidden="true" />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
+                        
+                        {/* Reference div for auto-scrolling to bottom */}
+                        <div ref={messagesEndRef} />
+                        
                         {isLoading && (
                           <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-3 duration-300">
                             <div className="flex-shrink-0">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent/30">
-                                <Bot className="w-5 h-5 text-foreground" aria-hidden="true" />
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10">
+                                {/* Replace Bot icon with theme-based Qubit AI logo */}
+                                <img
+                                  src={theme === 'light' ? "/qubit-ai-dark.svg" : "/qubit-ai.svg"}
+                                  alt="Qubit AI"
+                                  width={20}
+                                  height={20}
+                                  className="w-5 h-5"
+                                />
                               </div>
                             </div>
                             <div className="flex-1 max-w-[85%] text-foreground">
+                              {/* Add title for AI message in loading state with centered alignment */}
+                              <div className="font-medium mb-1 flex items-center">Qubit AI</div>
                               {/* Skeleton loading with smooth animation */}
                               <div className="space-y-2 animate-pulse">
                                 <Skeleton className="h-4 w-[80%] bg-accent/50 dark:bg-accent/30 transition-opacity duration-300" />
