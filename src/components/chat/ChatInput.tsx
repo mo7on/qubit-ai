@@ -4,7 +4,7 @@ import * as React from "react"
 import { Send, Plus, X, Paperclip, History } from "lucide-react"
 import { useTheme } from "next-themes"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { mockTickets } from "@/lib/mock-tickets"
+// Removed mockTickets import
 import { mockArticles } from "@/data/mock-articles"
 import {
   Popover,
@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/popover"
 import { ArticleSuggestions } from "@/components/chat/ArticleSuggestions"
 import { useChatContext } from "./ChatContext"
+
+// Add interface for ticket history items
+interface TicketHistoryItem {
+  id: string;
+  timestamp: Date;
+  content: string;
+}
 
 interface ChatInputProps {
   handleFileUploadClick: () => void;
@@ -35,6 +42,9 @@ export function ChatInput({
   
   const [text, setText] = React.useState<string>("");
   const [isFocused, setIsFocused] = React.useState(false);
+  
+  // Create empty tickets array to replace mockTickets
+  const emptyTickets: TicketHistoryItem[] = [];
   
   const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -110,19 +120,25 @@ export function ChatInput({
                     <PopoverContent className="w-64 animate-in fade-in-50 slide-in-from-right-5 duration-300" align="start" side="right" sideOffset={5}>
                       <ScrollArea className="h-[300px] w-full">
                         <div className="space-y-4" role="list" aria-label="Chat history">
-                          {mockTickets.map((ticket, index) => (
-                            <div
-                              key={ticket.id}
-                              className={`p-3 rounded-lg hover:bg-accent cursor-pointer transition-all duration-200 hover:translate-y-[-2px] animate-in fade-in-50 duration-300`}
-                              style={{ animationDelay: `${index * 50}ms` }}
-                              role="listitem"
-                            >
-                              <p className="text-sm text-muted-foreground">
-                                {ticket.timestamp.toLocaleString()}
-                              </p>
-                              <p className="mt-1">{ticket.content}</p>
+                          {emptyTickets.length > 0 ? (
+                            emptyTickets.map((ticket, index) => (
+                              <div
+                                key={ticket.id}
+                                className={`p-3 rounded-lg hover:bg-accent cursor-pointer transition-all duration-200 hover:translate-y-[-2px] animate-in fade-in-50 duration-300`}
+                                style={{ animationDelay: `${index * 50}ms` }}
+                                role="listitem"
+                              >
+                                <p className="text-sm text-muted-foreground">
+                                  {ticket.timestamp.toLocaleString()}
+                                </p>
+                                <p className="mt-1">{ticket.content}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-3 text-center text-muted-foreground">
+                              No history available
                             </div>
-                          ))}
+                          )}
                         </div>
                       </ScrollArea>
                     </PopoverContent>

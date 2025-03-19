@@ -51,6 +51,7 @@ interface TicketHistoryItem {
  * 
  * @component
  */
+// Add a global CSS class to the root level
 export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
   // State management for user input and UI elements
   const [text, setText] = React.useState<string>("");
@@ -235,6 +236,18 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
 
   return (
     <>
+      {/* Add global styles for cursor pointer */}
+      <style jsx global>{`
+        button, 
+        a, 
+        [role="button"],
+        .cursor-pointer,
+        [onClick],
+        .hover\\:bg-accent {
+          cursor: pointer !important;
+        }
+      `}</style>
+
       {!isArticlesPage ? (
         <div 
           className="relative flex flex-col min-h-screen"
@@ -347,7 +360,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                                       href={source.url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-colors"
+                                      className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
                                     >
                                       <p className="text-sm font-medium">{source.description}</p>
                                       <p className="text-xs text-muted-foreground truncate">{source.url}</p>
@@ -407,7 +420,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
-                            className="plus-button p-2 hover:bg-accent rounded-full transition-colors"
+                            className="plus-button p-2 hover:bg-accent rounded-full transition-colors cursor-pointer"
                             aria-label="Toggle options"
                           >
                             {showHistory ? (
@@ -557,7 +570,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
               <div className="max-w-3xl mx-auto">
                 <div className="flex items-center gap-4">
                   <button
-                    className="p-2 hover:bg-accent rounded-full transition-colors"
+                    className="p-2 hover:bg-accent rounded-full transition-colors cursor-pointer"
                     onClick={() => setShowHistory(!showHistory)}
                     aria-label="Toggle history"
                   >
@@ -610,7 +623,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
       {/* Image Zoom Overlay */}
       {zoomedImage && (
         <div 
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out"
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out cursor-pointer"
           onClick={handleCloseZoom}
           role="dialog"
           aria-modal="true"

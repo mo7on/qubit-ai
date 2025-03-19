@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import { X } from "lucide-react"
 import { mockArticles } from "@/data/mock-articles"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
+import { ArticleVoting } from "@/components/ArticleVoting";
 
 export default function ArticlePage() {
   const router = useRouter()
@@ -53,7 +54,17 @@ export default function ArticlePage() {
         <div className="prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none">
           <MarkdownRenderer content={article.content || article.description} />
         </div>
+        
+        {/* Add the voting component at the end */}
+        <ArticleVoting 
+          articleId={article.id} 
+          onVote={(articleId, voteType) => {
+            // Here you can implement logic to save the vote to your backend
+            console.log(`Article ${articleId} received a ${voteType} vote`);
+          }} 
+        />
       </div>
     </div>
   )
 }
+
