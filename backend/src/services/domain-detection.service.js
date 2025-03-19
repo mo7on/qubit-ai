@@ -1,56 +1,77 @@
 /**
  * Service for detecting if queries are within the IT support domain
+ * and extracting device information
  */
 class DomainDetectionService {
+  constructor() {
+    // IT support domains and their related keywords
+    this.itSupportDomains = {
+      hardware: [
+        'computer', 'laptop', 'desktop', 'server', 'monitor', 'keyboard', 'mouse',
+        'printer', 'scanner', 'usb', 'hard drive', 'ssd', 'ram', 'cpu', 'processor',
+        'gpu', 'graphics card', 'motherboard', 'power supply', 'battery', 'charger',
+        'adapter', 'cable', 'port', 'hdmi', 'vga', 'dvi', 'displayport', 'bluetooth',
+        'wireless', 'device', 'driver', 'hardware'
+      ],
+      software: [
+        'software', 'program', 'application', 'app', 'install', 'uninstall', 'update',
+        'upgrade', 'windows', 'mac', 'linux', 'android', 'ios', 'office', 'excel',
+        'word', 'powerpoint', 'outlook', 'browser', 'chrome', 'firefox', 'edge',
+        'safari', 'operating system', 'os', 'version', 'license', 'activation'
+      ],
+      network: [
+        'network', 'wifi', 'internet', 'connection', 'router', 'modem', 'ethernet',
+        'ip address', 'dns', 'vpn', 'firewall', 'proxy', 'bandwidth', 'speed test',
+        'latency', 'ping', 'packet loss', 'wireless', 'signal', 'hotspot', 'bluetooth'
+      ],
+      security: [
+        'security', 'password', 'login', 'authentication', 'virus', 'malware',
+        'ransomware', 'spyware', 'phishing', 'hack', 'breach', 'encryption',
+        'firewall', 'antivirus', 'spam', 'backup', 'restore', 'recovery', 'permission',
+        'access', 'admin', 'administrator', 'account'
+      ],
+      troubleshooting: [
+        'error', 'bug', 'crash', 'blue screen', 'bsod', 'freeze', 'hang', 'slow',
+        'performance', 'troubleshoot', 'fix', 'solve', 'resolve', 'repair', 'issue',
+        'problem', 'not working', 'failed', 'boot', 'startup', 'shutdown', 'restart'
+      ]
+    };
+
+    // Technical question patterns
+    this.technicalQuestionPatterns = [
+      /how (do|can|to|would|should) .* (fix|solve|resolve|troubleshoot|repair|setup|configure|install)/i,
+      /why (is|does|won't|can't|doesn't|isn't|didn't|couldn't) .* (work|connect|open|start|run|load|respond|function)/i,
+      /what (is|are|causes|means|should|could|would) .* (error|issue|problem|bug|crash|message|code|setting)/i,
+      /can('t| not)? .* (install|update|connect|access|login|reset|restore|backup|configure|setup)/i,
+      /is there (a way|a method|a solution) to .* (fix|solve|resolve|troubleshoot|repair)/i,
+      /trouble with .* (computer|laptop|device|software|hardware|network|connection|internet)/i,
+      /need help .* (setting up|configuring|installing|fixing|troubleshooting|resolving)/i
+    ];
+    
+    // Device brands
+    this.deviceBrands = [
+      'hp', 'dell', 'lenovo', 'apple', 'mac', 'macbook', 'imac', 'asus', 'acer',
+      'microsoft', 'surface', 'samsung', 'toshiba', 'sony', 'vaio', 'lg',
+      'chromebook', 'google', 'huawei', 'msi', 'razer', 'alienware', 'fujitsu'
+    ];
+  }
+
   /**
    * Check if a query is related to IT support
    * @param {string} query - User query
    * @returns {boolean} - Whether the query is related to IT support
    */
-  static isITSupportDomain(query) {
+  isITSupportDomain(query) {
     try {
       if (!query || typeof query !== 'string') {
         return false;
       }
 
-      // IT support domains and their related keywords
-      const itSupportDomains = {
-        hardware: [
-          'computer', 'laptop', 'desktop', 'server', 'monitor', 'keyboard', 'mouse',
-          'printer', 'scanner', 'usb', 'hard drive', 'ssd', 'ram', 'cpu', 'processor',
-          'gpu', 'graphics card', 'motherboard', 'power supply', 'battery', 'charger',
-          'adapter', 'cable', 'port', 'hdmi', 'vga', 'dvi', 'displayport', 'bluetooth',
-          'wireless', 'device', 'driver', 'hardware'
-        ],
-        software: [
-          'software', 'program', 'application', 'app', 'install', 'uninstall', 'update',
-          'upgrade', 'windows', 'mac', 'linux', 'android', 'ios', 'office', 'excel',
-          'word', 'powerpoint', 'outlook', 'browser', 'chrome', 'firefox', 'edge',
-          'safari', 'operating system', 'os', 'version', 'license', 'activation'
-        ],
-        network: [
-          'network', 'wifi', 'internet', 'connection', 'router', 'modem', 'ethernet',
-          'ip address', 'dns', 'vpn', 'firewall', 'proxy', 'bandwidth', 'speed test',
-          'latency', 'ping', 'packet loss', 'wireless', 'signal', 'hotspot', 'bluetooth'
-        ],
-        security: [
-          'security', 'password', 'login', 'authentication', 'virus', 'malware',
-          'ransomware', 'spyware', 'phishing', 'hack', 'breach', 'encryption',
-          'firewall', 'antivirus', 'spam', 'backup', 'restore', 'recovery', 'permission',
-          'access', 'admin', 'administrator', 'account'
-        ],
-        troubleshooting: [
-          'error', 'bug', 'crash', 'blue screen', 'bsod', 'freeze', 'hang', 'slow',
-          'performance', 'troubleshoot', 'fix', 'solve', 'resolve', 'repair', 'issue',
-          'problem', 'not working', 'failed', 'boot', 'startup', 'shutdown', 'restart'
-        ]
-      };
-
-      // Flatten the domains into a single array of keywords
-      const allKeywords = Object.values(itSupportDomains).flat();
-      
       // Convert query to lowercase for case-insensitive matching
       const lowercaseQuery = query.toLowerCase();
+      
+      // Flatten the domains into a single array of keywords
+      const allKeywords = Object.values(this.itSupportDomains).flat();
       
       // Check if any IT support keyword is in the query
       const containsITKeyword = allKeywords.some(keyword => 
@@ -63,18 +84,10 @@ class DomainDetectionService {
         return true;
       }
       
-      // Technical question patterns
-      const technicalQuestionPatterns = [
-        /how (do|can|to|would|should) .* (fix|solve|resolve|troubleshoot|repair|setup|configure|install)/i,
-        /why (is|does|won't|can't|doesn't|isn't|didn't|couldn't) .* (work|connect|open|start|run|load|respond|function)/i,
-        /what (is|are|causes|means|should|could|would) .* (error|issue|problem|bug|crash|message|code|setting)/i,
-        /can('t| not)? .* (install|update|connect|access|login|reset|restore|backup|configure|setup)/i,
-        /is there (a way|a method|a solution) to .* (fix|solve|resolve|troubleshoot|repair)/i,
-        /trouble with .* (computer|laptop|device|software|hardware|network|connection|internet)/i,
-        /need help .* (setting up|configuring|installing|fixing|troubleshooting|resolving)/i
-      ];
-      
-      const matchesPattern = technicalQuestionPatterns.some(pattern => pattern.test(lowercaseQuery));
+      // Check for technical question patterns
+      const matchesPattern = this.technicalQuestionPatterns.some(pattern => 
+        pattern.test(lowercaseQuery)
+      );
       
       if (matchesPattern) {
         console.log(`IT pattern detected in query: "${query.substring(0, 50)}..."`);
@@ -94,7 +107,7 @@ class DomainDetectionService {
    * Get a professional response for non-IT support queries
    * @returns {string} - Response message
    */
-  static getNonITSupportResponse() {
+  getNonITSupportResponse() {
     return `## Outside IT Support Scope
 
 I specialize exclusively in providing IT technical support. Your query appears to be outside my area of expertise.
@@ -111,51 +124,11 @@ Please feel free to ask any IT-related technical questions, and I'll provide det
   }
   
   /**
-   * Process a query through the IT support domain pipeline
-   * @param {string} query - User query
-   * @returns {Object} - Processing result with domain status and appropriate response
-   */
-  static async processQuery(query) {
-    try {
-      // Step 1: Check if query is IT-related
-      const isITRelated = this.isITSupportDomain(query);
-      
-      // Create result object with domain status
-      const result = {
-        query,
-        isITRelated,
-        timestamp: new Date().toISOString(),
-        sources: [],
-        response: null
-      };
-      
-      // Step 2: Handle non-IT queries immediately
-      if (!isITRelated) {
-        result.response = this.getNonITSupportResponse();
-        return result;
-      }
-      
-      // For IT-related queries, the calling code will handle Tavily and Gemini integration
-      return result;
-    } catch (error) {
-      console.error('Error processing query through domain detection:', error);
-      return {
-        query,
-        isITRelated: false,
-        error: true,
-        errorMessage: error.message,
-        timestamp: new Date().toISOString(),
-        response: 'I apologize, but I encountered a technical issue while processing your request. Please try again or contact our support team directly for immediate assistance.'
-      };
-    }
-  }
-  
-  /**
    * Get the domain category of an IT support query
    * @param {string} query - User query
    * @returns {string|null} - Category name or null if not IT-related
    */
-  static getITSupportCategory(query) {
+  getITSupportCategory(query) {
     if (!query || typeof query !== 'string') {
       return null;
     }
@@ -176,106 +149,41 @@ Please feel free to ask any IT-related technical questions, and I'll provide det
     
     return null;
   }
-}
 
-// Create a singleton instance
-const domainDetectionService = new DomainDetectionService();
-
-// Export both the class and the singleton instance
-module.exports = DomainDetectionService;
-module.exports.default = DomainDetectionService;
-module.exports.instance = domainDetectionService;
-
-/**
- * Service for detecting if queries are within the specified domain
- */
-class DomainDetectionService {
   /**
-   * Check if a query is related to the specified domain
+   * Extract device brand information from a query
    * @param {string} query - User query
-   * @returns {boolean} - Whether the query is within the domain
+   * @returns {string|null} - Device brand or null if not detected
    */
-  static isInDomain(query) {
+  extractDeviceBrand(query) {
     if (!query || typeof query !== 'string') {
-      return false;
+      return null;
     }
-
-    // Domain-specific keywords
-    const domainKeywords = [
-      // Add your domain-specific keywords here
-      'computer', 'software', 'hardware', 'network', 'server',
-      'database', 'programming', 'code', 'development', 'IT',
-      'technology', 'system', 'application', 'website', 'internet'
-    ];
     
-    // Convert query to lowercase for case-insensitive matching
     const lowercaseQuery = query.toLowerCase();
     
-    // Check if any domain keyword is in the query
-    const containsDomainKeyword = domainKeywords.some(keyword => 
-      lowercaseQuery.includes(keyword.toLowerCase())
-    );
-    
-    if (containsDomainKeyword) {
-      return true;
+    // Extract device brand if present
+    for (const brand of this.deviceBrands) {
+      if (lowercaseQuery.includes(brand)) {
+        // For Apple products, be more specific if possible
+        if (brand === 'apple' || brand === 'mac') {
+          if (lowercaseQuery.includes('macbook')) {
+            return 'MacBook';
+          } else if (lowercaseQuery.includes('imac')) {
+            return 'iMac';
+          } else if (lowercaseQuery.includes('mac')) {
+            return 'Mac';
+          } else {
+            return 'Apple';
+          }
+        } else {
+          // Capitalize first letter of brand
+          return brand.charAt(0).toUpperCase() + brand.slice(1);
+        }
+      }
     }
     
-    // Domain-specific question patterns
-    const domainQuestionPatterns = [
-      /how (do|can|to|would|should) .* (develop|program|code|implement|design)/i,
-      /what (is|are|means) .* (algorithm|function|method|api|framework)/i,
-      /why (is|does|won't) .* (code|program|application|system|website)/i
-    ];
-    
-    return domainQuestionPatterns.some(pattern => pattern.test(lowercaseQuery));
-  }
-
-  /**
-   * Get a professional response for out-of-domain queries
-   * @returns {string} - Response message
-   */
-  static getOutOfDomainResponse() {
-    return `I apologize, but your question appears to be outside the domain I'm designed to assist with. I specialize in technology and IT-related topics.
-
-If you have any questions related to technology, programming, or IT support, I'd be happy to help.`;
-  }
-}
-
-/**
- * Service for detecting IT Support domain and extracting device information
- */
-class DomainDetectionService {
-  constructor() {
-    // Common IT support keywords
-    this.itKeywords = [
-      'computer', 'laptop', 'desktop', 'server', 'network', 'router', 'modem',
-      'wifi', 'software', 'hardware', 'install', 'update', 'upgrade', 'error',
-      'bug', 'crash', 'blue screen', 'bsod', 'driver', 'password', 'login',
-      'account', 'email', 'printer', 'scan', 'virus', 'malware', 'security',
-      'backup', 'restore', 'boot', 'startup', 'shutdown', 'performance', 'slow',
-      'freeze', 'hang', 'not working', 'broken', 'fix', 'repair', 'troubleshoot'
-    ];
-    
-    // Device brands
-    this.deviceBrands = [
-      'hp', 'dell', 'lenovo', 'apple', 'mac', 'macbook', 'imac', 'asus', 'acer',
-      'microsoft', 'surface', 'samsung', 'toshiba', 'sony', 'vaio', 'lg',
-      'chromebook', 'google', 'huawei', 'msi', 'razer', 'alienware', 'fujitsu'
-    ];
-  }
-  
-  /**
-   * Check if a message is related to IT Support
-   * @param {string} message - User message
-   * @returns {boolean} - True if message is IT Support related
-   */
-  isITSupportDomain(message) {
-    if (!message) return false;
-    
-    const lowerMessage = message.toLowerCase();
-    
-    // Check for IT keywords
-    return this.itKeywords.some(keyword => lowerMessage.includes(keyword));
+    return null;
   }
   
   /**
@@ -287,43 +195,25 @@ class DomainDetectionService {
     if (!message) {
       return {
         isITSupport: false,
-        deviceBrand: null
+        deviceBrand: null,
+        category: null
       };
     }
     
-    const lowerMessage = message.toLowerCase();
-    
-    // Check for IT keywords
-    const isITSupport = this.itKeywords.some(keyword => lowerMessage.includes(keyword));
-    
-    // Extract device brand if present
-    let deviceBrand = null;
-    for (const brand of this.deviceBrands) {
-      if (lowerMessage.includes(brand)) {
-        // For Apple products, be more specific if possible
-        if (brand === 'apple' || brand === 'mac') {
-          if (lowerMessage.includes('macbook')) {
-            deviceBrand = 'MacBook';
-          } else if (lowerMessage.includes('imac')) {
-            deviceBrand = 'iMac';
-          } else if (lowerMessage.includes('mac')) {
-            deviceBrand = 'Mac';
-          } else {
-            deviceBrand = 'Apple';
-          }
-        } else {
-          // Capitalize first letter of brand
-          deviceBrand = brand.charAt(0).toUpperCase() + brand.slice(1);
-        }
-        break;
-      }
-    }
+    const isITSupport = this.isITSupportDomain(message);
+    const deviceBrand = this.extractDeviceBrand(message);
+    const category = isITSupport ? this.getITSupportCategory(message) : null;
     
     return {
       isITSupport,
-      deviceBrand
+      deviceBrand,
+      category
     };
   }
 }
 
-module.exports = new DomainDetectionService();
+// Create a singleton instance
+const domainDetectionService = new DomainDetectionService();
+
+// Export the singleton instance
+module.exports = domainDetectionService;

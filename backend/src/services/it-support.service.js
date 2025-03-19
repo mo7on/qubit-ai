@@ -1,6 +1,6 @@
 const DomainDetectionService = require('./domain-detection.service');
-const TavilyService = require('./tavily.service');
 const GeminiService = require('./gemini.service');
+const AIIntegrationService = require('./ai-integration.service');
 
 /**
  * Service for handling the complete IT support query pipeline
@@ -9,9 +9,10 @@ class ITSupportService {
   /**
    * Process an IT support query through the complete pipeline
    * @param {string} query - User query
+   * @param {Object} options - Additional options like deviceBrand
    * @returns {Promise<Object>} - Processing result
    */
-  async processQuery(query) {
+  async processQuery(query, options = {}) {
     try {
       // Step 1: Check if query is IT-related
       const isITRelated = DomainDetectionService.isITSupportDomain(query);
@@ -28,27 +29,30 @@ class ITSupportService {
       
       // Step 2: Handle non-IT queries immediately
       if (!isITRelated) {
-        result.response = DomainDetectionService.getNonITSupportResponse();
+        result.response = 'This system is only for IT Support-related inquiries.';
         return result;
       }
       
       // Step 3: Get IT support category
       result.category = DomainDetectionService.getITSupportCategory(query);
       
-      // Step 4: Get sources from Tavily
+      // Step 4: Get sources using Gemini AI
       console.log(`Fetching sources for IT query in category: ${result.category || 'general'}`);
-      result.sources = await TavilyService.getITSupportSources(query, result.category);
+      const sourcesResult = await AIIntegrationService.getSources(query);
+      result.sources = sourcesResult.sources || [];
       
       // Log source retrieval
       console.log(`Retrieved ${result.sources.length} sources for query`);
       
       // Step 5: Generate response with Gemini
       console.log('Generating response based on sources...');
-      result.response = await GeminiService.generateITSupportResponse(
+      const responseResult = await AIIntegrationService.generateResponse(
         query, 
         result.sources,
-        result.category
+        { deviceBrand: options.deviceBrand }
       );
+      
+      result.response = responseResult.response || 'I apologize, but I encountered an issue generating a response.';
       
       return result;
     } catch (error) {
@@ -56,70 +60,41 @@ class ITSupportService {
       return {
         query,
         isITRelated: true,
-        error: true,
-        errorMessage: error.message,
-        timestamp: new Date().toISOString(),
-        response: 'I apologize, but I encountered a technical issue while processing your request. Please try again or contact our support team directly for immediate assistance.'
+        category: null,
+        sources: [],
+        response: 'I apologize, but I encountered a technical issue while processing your request. Please try again later.',
+        timestamp: new Date().toISOString()
       };
     }
   }
-  
+
   /**
-   * Get sources for an IT support query (first step of two-step process)
+   * Get sources for an IT support query
    * @param {string} query - User query
    * @returns {Promise<Object>} - Sources result
    */
   async getSources(query) {
     try {
-      // Check if query is IT-related
-      const isITRelated = DomainDetectionService.isITSupportDomain(query);
-      
-      if (!isITRelated) {
-        return {
-          isITRelated: false,
-          message: DomainDetectionService.getNonITSupportResponse(),
-          sources: []
-        };
-      }
-      
-      // Get category and sources
-      const category = DomainDetectionService.getITSupportCategory(query);
-      const sources = await TavilyService.getITSupportSources(query, category);
-      
-      return {
-        isITRelated: true,
-        category,
-        sources,
-        message: sources.length > 0 
-          ? `Found ${sources.length} relevant sources for your IT support query.` 
-          : "No specific sources found, but I can still help with your query."
-      };
+      return await AIIntegrationService.getSources(query);
     } catch (error) {
       console.error('Error getting sources for IT query:', error);
       return {
-        isITRelated: true,
-        error: true,
-        sources: [],
-        message: "Error retrieving sources. I'll try to answer based on my knowledge."
+        success: false,
+        sources: []
       };
     }
   }
-  
+
   /**
-   * Generate response based on sources (second step of two-step process)
+   * Generate response for an IT support query
    * @param {string} query - User query
-   * @param {Array} sources - Sources from first step
-   * @param {string} category - IT support category
+   * @param {Array} sources - Sources to use
+   * @param {Object} options - Additional options like deviceBrand
    * @returns {Promise<Object>} - Response result
    */
-  async generateResponse(query, sources, category = null) {
+  async generateResponse(query, sources, options = {}) {
     try {
-      const response = await GeminiService.generateITSupportResponse(query, sources, category);
-      
-      return {
-        success: true,
-        response
-      };
+      return await AIIntegrationService.generateResponse(query, sources, options);
     } catch (error) {
       console.error('Error generating response for IT query:', error);
       return {

@@ -24,7 +24,7 @@ class AIIntegrationService {
         return {
           success: false,
           isITRelated: false,
-          message: 'Your question does not belong to our field of work. We only handle IT Support related queries.',
+          message: 'This system is only for IT Support-related inquiries.',
           sources: []
         };
       }
@@ -76,20 +76,29 @@ class AIIntegrationService {
    * Generate response based on query and sources
    * @param {string} query - User query
    * @param {Array} sources - Sources to use for response
+   * @param {Object} options - Additional options like deviceBrand
    * @returns {Promise<Object>} - Generated response
    */
-  async generateResponse(query, sources = []) {
+  async generateResponse(query, sources = [], options = {}) {
     try {
       // Format sources for prompt
       const sourcesText = sources.length > 0
         ? `Sources:\n${sources.map((s, i) => `${i+1}. ${s.title}: ${s.description}`).join('\n')}`
         : 'No specific sources provided.';
       
+      // Add device-specific context if available
+      let deviceContext = '';
+      if (options.deviceBrand) {
+        deviceContext = `The user is specifically asking about a ${options.deviceBrand} device. Tailor your response to address ${options.deviceBrand}-specific solutions when applicable.`;
+      }
+      
       // Generate response with Gemini AI
       const prompt = `
         You are an expert IT support specialist providing help to a user.
         
         User Query: "${query}"
+        
+        ${deviceContext}
         
         ${sourcesText}
         
