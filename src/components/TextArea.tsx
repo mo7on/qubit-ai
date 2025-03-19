@@ -137,11 +137,38 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
       return;
     }
     
+    // Find matching articles
     const matches = mockArticles.filter(article => 
       article.title.toLowerCase().includes(value.toLowerCase()) ||
       article.description.toLowerCase().includes(value.toLowerCase())
     );
-    setMatchingArticles(matches);
+    
+    // Sort by relevance (using title match as priority)
+    const sortedMatches = [...matches].sort((a, b) => {
+      // Sort by title match first (exact matches get priority)
+      const aTitle = a.title.toLowerCase();
+      const bTitle = b.title.toLowerCase();
+      const searchTerm = value.toLowerCase();
+      
+      if (aTitle.includes(searchTerm) && !bTitle.includes(searchTerm)) return -1;
+      if (!aTitle.includes(searchTerm) && bTitle.includes(searchTerm)) return 1;
+      
+      // If both match or don't match in title, sort by date (assuming newer is better)
+      // Using the id as a proxy for recency if it's a number
+      const aId = parseInt(a.id);
+      const bId = parseInt(b.id);
+      
+      if (!isNaN(aId) && !isNaN(bId)) {
+        return bId - aId; // Higher ID (newer) first
+      }
+      
+      return 0;
+    });
+    
+    // Get the top 2 articles
+    let topArticles = sortedMatches.slice(0, 2);
+    
+    setMatchingArticles(topArticles);
   }, [setText, setMatchingArticles]);
   
     // Add article suggestion click handler
