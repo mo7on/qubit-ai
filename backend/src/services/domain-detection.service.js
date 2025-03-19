@@ -241,4 +241,89 @@ If you have any questions related to technology, programming, or IT support, I'd
   }
 }
 
-module.exports = DomainDetectionService;
+/**
+ * Service for detecting IT Support domain and extracting device information
+ */
+class DomainDetectionService {
+  constructor() {
+    // Common IT support keywords
+    this.itKeywords = [
+      'computer', 'laptop', 'desktop', 'server', 'network', 'router', 'modem',
+      'wifi', 'software', 'hardware', 'install', 'update', 'upgrade', 'error',
+      'bug', 'crash', 'blue screen', 'bsod', 'driver', 'password', 'login',
+      'account', 'email', 'printer', 'scan', 'virus', 'malware', 'security',
+      'backup', 'restore', 'boot', 'startup', 'shutdown', 'performance', 'slow',
+      'freeze', 'hang', 'not working', 'broken', 'fix', 'repair', 'troubleshoot'
+    ];
+    
+    // Device brands
+    this.deviceBrands = [
+      'hp', 'dell', 'lenovo', 'apple', 'mac', 'macbook', 'imac', 'asus', 'acer',
+      'microsoft', 'surface', 'samsung', 'toshiba', 'sony', 'vaio', 'lg',
+      'chromebook', 'google', 'huawei', 'msi', 'razer', 'alienware', 'fujitsu'
+    ];
+  }
+  
+  /**
+   * Check if a message is related to IT Support
+   * @param {string} message - User message
+   * @returns {boolean} - True if message is IT Support related
+   */
+  isITSupportDomain(message) {
+    if (!message) return false;
+    
+    const lowerMessage = message.toLowerCase();
+    
+    // Check for IT keywords
+    return this.itKeywords.some(keyword => lowerMessage.includes(keyword));
+  }
+  
+  /**
+   * Analyze message for IT Support relevance and extract device information
+   * @param {string} message - User message
+   * @returns {Object} - Analysis result with isITSupport flag and device info
+   */
+  analyzeMessage(message) {
+    if (!message) {
+      return {
+        isITSupport: false,
+        deviceBrand: null
+      };
+    }
+    
+    const lowerMessage = message.toLowerCase();
+    
+    // Check for IT keywords
+    const isITSupport = this.itKeywords.some(keyword => lowerMessage.includes(keyword));
+    
+    // Extract device brand if present
+    let deviceBrand = null;
+    for (const brand of this.deviceBrands) {
+      if (lowerMessage.includes(brand)) {
+        // For Apple products, be more specific if possible
+        if (brand === 'apple' || brand === 'mac') {
+          if (lowerMessage.includes('macbook')) {
+            deviceBrand = 'MacBook';
+          } else if (lowerMessage.includes('imac')) {
+            deviceBrand = 'iMac';
+          } else if (lowerMessage.includes('mac')) {
+            deviceBrand = 'Mac';
+          } else {
+            deviceBrand = 'Apple';
+          }
+        } else {
+          // Capitalize first letter of brand
+          deviceBrand = brand.charAt(0).toUpperCase() + brand.slice(1);
+        }
+        break;
+      }
+    }
+    
+    return {
+      isITSupport,
+      deviceBrand
+    };
+  }
+}
+
+module.exports = new DomainDetectionService();

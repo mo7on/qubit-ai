@@ -12,12 +12,13 @@ class MessageService {
   /**
    * Process a user message with Gemini AI
    * @param {string} message - User message
+   * @param {Object} options - Additional options
    * @returns {Promise<Object>} - Processing result
    */
-  async processMessage(message) {
+  async processMessage(message, options = {}) {
     try {
       // Generate response with Gemini AI
-      const response = await this.generateITSupportResponse(message);
+      const response = await this.generateITSupportResponse(message, options);
       
       return {
         success: true,
@@ -37,15 +38,24 @@ class MessageService {
   /**
    * Generate IT support response using Gemini AI
    * @param {string} query - User query
+   * @param {Object} options - Additional options like deviceBrand
    * @returns {Promise<string>} - Generated response
    */
-  async generateITSupportResponse(query) {
+  async generateITSupportResponse(query, { deviceBrand = null } = {}) {
     try {
+      // Create device-specific context if available
+      let deviceContext = '';
+      if (deviceBrand) {
+        deviceContext = `The user is specifically asking about a ${deviceBrand} device. Tailor your response to address ${deviceBrand}-specific solutions when applicable.`;
+      }
+      
       // Create prompt with IT support context
       const prompt = `
         You are an expert IT support specialist with extensive technical knowledge.
         
         TASK: Provide a detailed, step-by-step technical response to the following IT support query.
+        
+        ${deviceContext}
         
         USER QUERY: "${query}"
         

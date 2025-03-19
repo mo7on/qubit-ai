@@ -16,10 +16,10 @@ exports.processMessage = async (req, res) => {
       });
     }
     
-    // First check if message is within IT Support domain
-    const isITSupport = DomainDetectionService.isITSupportDomain(message);
+    // First check if message is within IT Support domain and extract device info
+    const domainResult = DomainDetectionService.analyzeMessage(message);
     
-    if (!isITSupport) {
+    if (!domainResult.isITSupport) {
       return res.status(403).json({
         status: 'error',
         message: 'Your question does not belong to our field of work. We only handle IT Support related queries.'
@@ -27,7 +27,10 @@ exports.processMessage = async (req, res) => {
     }
     
     // Process message through Gemini AI only if it's in the IT Support domain
-    const result = await MessageService.processMessage(message);
+    // Pass device brand information if available
+    const result = await MessageService.processMessage(message, {
+      deviceBrand: domainResult.deviceBrand
+    });
     
     if (!result.success) {
       return res.status(500).json({
@@ -39,7 +42,8 @@ exports.processMessage = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        response: result.response
+        response: result.response,
+        deviceBrand: domainResult.deviceBrand
       }
     });
   } catch (error) {
@@ -61,23 +65,23 @@ exports.createMessage = async (req, res) => {
     
     // For user messages, check domain before processing
     if (role === 'user' || !role) {
-      // Check if message is within IT Support domain
-      const isITSupport = DomainDetectionService.isITSupportDomain(content);
+      // Check if message is within IT Support domain and extract device info
+      const domainResult = DomainDetectionService.analyzeMessage(content);
       
-      if (!isITSupport) {
-        // Create user message with updated fields
+      if (!domainResult.isITSupport) {
+        // Create user message
         const userMessage = await DatabaseService.message.create({
           conversation_id: conversationId,
-          message_content: content, // Updated field name
+          message_content: content,
           role: 'user',
           created_at: new Date()
         });
         
-        // Create rejection message with updated fields
+        // Create rejection message
         const rejectionMessage = 'Your question does not belong to our field of work. We only handle IT Support related queries.';
         const assistantMessage = await DatabaseService.message.create({
           conversation_id: conversationId,
-          message_content: rejectionMessage, // Updated field name
+          message_content: rejectionMessage,
           role: 'assistant',
           metadata: {
             isITSupport: false
@@ -99,28 +103,31 @@ exports.createMessage = async (req, res) => {
           }
         });
       }
-    }
-    
-    // Create new user message with updated fields
-    const userMessage = await DatabaseService.message.create({
-      conversation_id: conversationId,
-      message_content: content, // Updated field name
-      role: role || 'user',
-      created_at: new Date()
-    });
-    
-    // If this is a user message, generate an AI response
-    if (role === 'user' || !role) {
-      // Process message through Gemini AI
-      const result = await MessageService.processMessage(content);
       
-      // Create AI response message with updated fields
+      // Create user message
+      const userMessage = await DatabaseService.message.create({
+        conversation_id: conversationId,
+        message_content: content,
+        role: 'user',
+        metadata: {
+          deviceBrand: domainResult.deviceBrand
+        },
+        created_at: new Date()
+      });
+      
+      // Process message through Gemini AI with device brand info
+      const result = await MessageService.processMessage(content, {
+        deviceBrand: domainResult.deviceBrand
+      });
+      
+      // Create AI response message
       const assistantMessage = await DatabaseService.message.create({
         conversation_id: conversationId,
-        message_content: result.response, // Updated field name
+        message_content: result.response,
         role: 'assistant',
         metadata: {
-          isITSupport: true
+          isITSupport: true,
+          deviceBrand: domainResult.deviceBrand
         },
         created_at: new Date()
       });
@@ -135,22 +142,31 @@ exports.createMessage = async (req, res) => {
         data: {
           userMessage,
           assistantMessage,
-          isITSupport: true
+          isITSupport: true,
+          deviceBrand: domainResult.deviceBrand
+        }
+      });
+    } else {
+      // Create new non-user message
+      const message = await DatabaseService.message.create({
+        conversation_id: conversationId,
+        message_content: content,
+        role: role,
+        created_at: new Date()
+      });
+      
+      // Update conversation timestamp
+      await DatabaseService.conversation.update(conversationId, {
+        updated_at: new Date()
+      });
+      
+      return res.status(201).json({
+        status: 'success',
+        data: {
+          message
         }
       });
     }
-    
-    // Update conversation timestamp
-    await DatabaseService.conversation.update(conversationId, {
-      updated_at: new Date()
-    });
-    
-    res.status(201).json({
-      status: 'success',
-      data: {
-        message: userMessage
-      }
-    });
   } catch (error) {
     console.error('Error creating message:', error);
     res.status(500).json({
