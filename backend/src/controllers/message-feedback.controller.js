@@ -1,23 +1,13 @@
 exports.createFeedback = async (req, res) => {
   try {
     const { messageId } = req.params;
-    const { rating, comment } = req.body;
+    const { rating, feedback_content } = req.body;
     
-    // Get the message to ensure it exists
-    const message = await DatabaseService.message.getById(messageId);
-    
-    if (!message) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Message not found'
-      });
-    }
-    
-    // Create feedback
+    // Create feedback with correct field names
     const feedback = await DatabaseService.messageFeedback.create({
       message_id: messageId,
       rating,
-      comment,
+      feedback_content,
       created_at: new Date()
     });
     

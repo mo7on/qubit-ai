@@ -328,72 +328,129 @@ class DatabaseService {
     if (error) throw error;
     return data;
   }
-}
-
-module.exports = DatabaseService;
-
-// Add article operations to the DatabaseService
-article: {
-  create: async (articleData) => {
-    return await supabase
-      .from('articles')
-      .insert(articleData)
-      .select()
-      .then(({ data, error }) => {
-        if (error) throw error;
-        return data[0];
-      });
-  },
   
-  getAll: async ({ page = 1, limit = 10, tag = null }) => {
-    let query = supabase
-      .from('articles')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
+  /**
+   * Article operations
+   */
+  static article = {
+    create: async (articleData) => {
+      return await supabase
+        .from('articles')
+        .insert(articleData)
+        .select()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data[0];
+        });
+    },
     
-    if (tag) {
-      query = query.contains('tags', [tag]);
-    }
-    
-    return await query.then(({ data, error }) => {
-      if (error) throw error;
-      return data;
-    });
-  },
-  
-  getById: async (id) => {
-    return await supabase
-      .from('articles')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
+    getAll: async ({ page = 1, limit = 10, tag = null }) => {
+      let query = supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range((page - 1) * limit, page * limit - 1);
+      
+      if (tag) {
+        query = query.contains('tags', [tag]);
+      }
+      
+      return await query.then(({ data, error }) => {
         if (error) throw error;
         return data;
       });
-  },
-  
-  update: async (id, updateData) => {
-    return await supabase
-      .from('articles')
-      .update({ ...updateData, updated_at: new Date() })
-      .eq('id', id)
-      .select()
-      .then(({ data, error }) => {
-        if (error) throw error;
-        return data[0];
-      });
-  },
-  
-  delete: async (id) => {
-    return await supabase
-      .from('articles')
-      .delete()
-      .eq('id', id)
-      .then(({ error }) => {
-        if (error) throw error;
-        return true;
-      });
-  }
-},
+    },
+    
+    getById: async (id) => {
+      return await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data;
+        });
+    },
+    
+    update: async (id, updateData) => {
+      return await supabase
+        .from('articles')
+        .update({ ...updateData, updated_at: new Date() })
+        .eq('id', id)
+        .select()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data[0];
+        });
+    },
+    
+    delete: async (id) => {
+      return await supabase
+        .from('articles')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) throw error;
+          return true;
+        });
+    }
+  };
+
+  /**
+   * Admin Login operations
+   */
+  static adminLogin = {
+    getByEmail: async (email) => {
+      const { data, error } = await supabase
+        .from('admin_login')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    
+    create: async (adminData) => {
+      const { data, error } = await supabase
+        .from('admin_login')
+        .insert(adminData)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
+    },
+    
+    // Other admin login operations...
+  };
+
+  /**
+   * Admin Device operations
+   */
+  static adminDevice = {
+    getByAdminId: async (adminId) => {
+      const { data, error } = await supabase
+        .from('admin_device')
+        .select('*')
+        .eq('admin_id', adminId);
+      
+      if (error) throw error;
+      return data;
+    },
+    
+    create: async (deviceData) => {
+      const { data, error } = await supabase
+        .from('admin_device')
+        .insert(deviceData)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
+    },
+    
+    // Other admin device operations...
+  };
+}
+
+module.exports = DatabaseService;

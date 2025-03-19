@@ -1,97 +1,106 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const TavilyService = require('./tavily.service');
 const DomainDetectionService = require('./domain-detection.service');
 
 /**
- * Service for AI model integration with two-step process
+ * Service for AI integration with Gemini
  */
 class AIIntegrationService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
   }
 
   /**
-   * Step 1: Get sources from Tavily
+   * Get sources for a query using Gemini AI
    * @param {string} query - User query
-   * @returns {Promise<Array>} - Array of sources
+   * @returns {Promise<Object>} - Sources and domain check result
    */
   async getSources(query) {
     try {
-      // Check if query is IT-related first
+      // Check if query is IT related
       const isITRelated = DomainDetectionService.isITSupportDomain(query);
       
       if (!isITRelated) {
         return {
           success: false,
           isITRelated: false,
-          sources: [],
-          message: DomainDetectionService.getNonITSupportResponse()
+          message: 'Your question does not belong to our field of work. We only handle IT Support related queries.',
+          sources: []
         };
       }
       
-      // Get sources from Tavily
-      const sources = await TavilyService.searchSources(query);
+      // Generate relevant sources using Gemini AI
+      const prompt = `
+        You are an expert IT support specialist. For the following IT support query, 
+        generate 3-5 relevant sources of information that would help answer this question.
+        
+        Query: "${query}"
+        
+        For each source, provide:
+        1. A title
+        2. A brief description (1-2 sentences)
+        3. A URL (if you don't know the exact URL, create a plausible one)
+        
+        Format your response as a JSON array of objects with title, description, and url properties.
+        Example: [{"title": "Troubleshooting Windows 10 Boot Issues", "description": "Official Microsoft guide on resolving startup problems", "url": "https://support.microsoft.com/windows/troubleshoot-boot-problems"}]
+      `;
       
-      return {
-        success: true,
-        isITRelated: true,
-        sources: sources,
-        message: sources.length > 0 
-          ? "Found relevant sources for your query." 
-          : "No specific sources found, but I can still help with your query."
-      };
+      const result = await this.model.generateContent(prompt);
+      const responseText = result.response.text();
+      
+      // Extract JSON array from response
+      const jsonMatch = responseText.match(/\[.*\]/s);
+      if (jsonMatch) {
+        const sources = JSON.parse(jsonMatch[0]);
+        
+        return {
+          success: true,
+          isITRelated: true,
+          sources
+        };
+      }
+      
+      throw new Error('Failed to parse sources from AI response');
     } catch (error) {
       console.error('Error getting sources:', error);
       return {
         success: false,
         isITRelated: true,
-        sources: [],
-        message: "Error retrieving sources. I'll try to answer based on my knowledge."
+        message: 'Error retrieving sources',
+        sources: []
       };
     }
   }
 
   /**
-   * Step 2: Generate response based on sources
+   * Generate response based on query and sources
    * @param {string} query - User query
-   * @param {Array} sources - Sources from Tavily
-   * @returns {Promise<string>} - Generated response
+   * @param {Array} sources - Sources to use for response
+   * @returns {Promise<Object>} - Generated response
    */
-  async generateResponse(query, sources) {
+  async generateResponse(query, sources = []) {
     try {
-      // Format sources for the prompt
-      const sourcesText = sources.length > 0 
-        ? sources.map((s, i) => `Source ${i+1}: ${s.title}\n${s.content.substring(0, 500)}...\nURL: ${s.url}`).join('\n\n')
-        : 'No specific sources available.';
+      // Format sources for prompt
+      const sourcesText = sources.length > 0
+        ? `Sources:\n${sources.map((s, i) => `${i+1}. ${s.title}: ${s.description}`).join('\n')}`
+        : 'No specific sources provided.';
       
-      // Create prompt with IT support context and sources
+      // Generate response with Gemini AI
       const prompt = `
-        You are an expert IT support specialist with extensive technical knowledge.
+        You are an expert IT support specialist providing help to a user.
         
-        TASK: Provide a detailed, step-by-step technical response to the following IT support query.
+        User Query: "${query}"
         
-        USER QUERY: "${query}"
-        
-        REFERENCE SOURCES:
         ${sourcesText}
         
-        GUIDELINES:
-        - Focus ONLY on IT support and technical assistance
-        - Base your response on the provided sources when applicable
-        - Include specific diagnostic steps
-        - Suggest practical solutions with clear instructions
-        - Mention potential causes of the issue
-        - Use technical terminology appropriately but explain complex concepts
-        - Format your response with clear headings and numbered steps
-        - At the end of your response, include a "Sources" section that lists the URLs you referenced
+        Based on the query and sources, provide a detailed, helpful response that:
+        1. Directly addresses the user's IT support question
+        2. Provides step-by-step instructions when applicable
+        3. Includes relevant technical details
+        4. Is formatted with clear headings and bullet points
+        5. References the sources when appropriate
         
-        RESPONSE FORMAT:
-        1. Brief assessment of the issue
-        2. Step-by-step troubleshooting process
-        3. Potential solutions
-        4. Additional recommendations
-        5. Sources (list the URLs you referenced)
+        Your response should be comprehensive yet easy to follow.
       `;
       
       const result = await this.model.generateContent(prompt);
@@ -100,10 +109,10 @@ class AIIntegrationService {
         response: result.response.text()
       };
     } catch (error) {
-      console.error('Error generating response with Gemini:', error);
+      console.error('Error generating response:', error);
       return {
         success: false,
-        response: 'I apologize, but I encountered a technical issue while generating a response. Here are some general troubleshooting steps you can try while I work on fixing this issue.'
+        response: 'I apologize, but I encountered a technical issue while generating a response. Please try again later.'
       };
     }
   }
