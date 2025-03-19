@@ -42,29 +42,25 @@ cd qubit-ai
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 cd backend
-npm install
+pnpm install
 ```
 
 3. Set up environment variables:
 ```bash
-# Frontend .env.local
-NEXT_PUBLIC_API_URL=http://localhost:5000
-
 # Backend .env
 GEMINI_API_KEY=your_google_api_key
-UPLOAD_DIR=./uploads
 ```
 
 ## 🖥 Running the Application
 Start development servers:
 ```bash
 # Frontend
-npm run dev
+pnpm run dev
 
 # Backend (from /backend)
-npm run server:dev
+pnpm run server:dev
 ```
 
 Access the application at `http://localhost:3000`
