@@ -1,14 +1,30 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client with environment variables
+// Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  process.exit(1);
-}
+// Create Supabase client
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false
+  }
+});
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Test connection
+const testConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('user_login').select('count()', { count: 'exact' });
+    if (error) throw error;
+    console.log('Supabase connection successful');
+    return true;
+  } catch (error) {
+    console.error('Supabase connection error:', error);
+    return false;
+  }
+};
+
+// Initialize connection on startup
+testConnection();
 
 module.exports = supabase;

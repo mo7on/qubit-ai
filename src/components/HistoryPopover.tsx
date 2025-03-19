@@ -4,9 +4,15 @@ import { History as HistoryIcon } from "lucide-react"
 import { useTicketHistory } from "@/hooks/useTicketHistory"
 import { ChatMessage } from "@/components/ChatMessage"
 import type { Ticket } from "@/hooks/useTicketHistory"
+import { useRouter } from "next/navigation"
 
 export function HistoryPopover() {
   const { tickets, loading, error } = useTicketHistory();
+  const router = useRouter();
+
+  const handleTicketClick = (conversationId: string) => {
+    router.push(`/conversation/${conversationId}`);
+  };
 
   return (
     <Popover>
@@ -33,10 +39,15 @@ export function HistoryPopover() {
           )}
           
           {tickets.map((ticket: Ticket) => (
-            <div key={ticket.id} className="border-b pb-2 last:border-b-0">
+            <div 
+              key={ticket.id} 
+              className="border-b pb-2 last:border-b-0 cursor-pointer hover:bg-accent/50 rounded-md p-2"
+              onClick={() => handleTicketClick(ticket.conversation_id)}
+            >
               <div className="text-xs text-muted-foreground mb-1">
                 {ticket.timestamp.toLocaleString()}
               </div>
+              <div className="font-medium text-sm mb-1">{ticket.summary}</div>
               <ChatMessage content={ticket.content} isAI={true} isHistoryItem={true} />
             </div>
           ))}
