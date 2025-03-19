@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
-import { mockTickets } from "@/lib/mock-tickets"
 import { mockArticles, syncArticlesWithBackend } from "@/data/mock-articles"
 import { IntroTour } from "@/components/IntroTour"
 import { useTheme } from "next-themes"
@@ -65,6 +64,9 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [imagePromptOpen, setImagePromptOpen] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Define emptyTickets array for history
+  const emptyTickets: TicketHistoryItem[] = [];
   
   // Use the chat context for shared state
   const { 
@@ -440,18 +442,24 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                               <PopoverContent className="w-64" align="start" side="right" sideOffset={5}>
                                 <ScrollArea className="h-[300px] w-full">
                                   <div className="space-y-4" role="list" aria-label="Chat history">
-                                    {mockTickets.map((ticket) => (
-                                      <div
-                                        key={ticket.id}
-                                        className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                                        role="listitem"
-                                      >
-                                        <p className="text-sm text-muted-foreground">
-                                          {ticket.timestamp.toLocaleString()}
-                                        </p>
-                                        <p className="mt-1">{ticket.content}</p>
+                                    {emptyTickets.length > 0 ? (
+                                      emptyTickets.map((ticket) => (
+                                        <div
+                                          key={ticket.id}
+                                          className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                                          role="listitem"
+                                        >
+                                          <p className="text-sm text-muted-foreground">
+                                            {ticket.timestamp.toLocaleString()}
+                                          </p>
+                                          <p className="mt-1">{ticket.content}</p>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="p-3 text-center text-muted-foreground">
+                                        No history available
                                       </div>
-                                    ))}
+                                    )}
                                   </div>
                                 </ScrollArea>
                               </PopoverContent>
@@ -582,7 +590,7 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
                   <div className="mt-4 border border-border rounded-lg p-4 animate-in fade-in-50 slide-in-from-top-5 duration-300">
                     <h3 className="font-medium mb-3">Recent Searches</h3>
                     <div className="space-y-2">
-                      {mockTickets.slice(0, 5).map((ticket) => (
+                      {emptyTickets.slice(0, 5).map((ticket) => (
                         <div
                           key={ticket.id}
                           className="p-2 hover:bg-accent rounded-md cursor-pointer transition-colors"

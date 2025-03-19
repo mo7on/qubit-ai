@@ -1,9 +1,9 @@
-import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Button } from './ui/button';
-import { HistoryIcon } from 'lucide-react';
-import { useTicketHistory, Ticket } from '../hooks/useTicketHistory';
-import { ChatMessage } from './ChatMessage';
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { History as HistoryIcon } from "lucide-react"
+import { useTicketHistory } from "@/hooks/useTicketHistory"
+import { ChatMessage } from "@/components/ChatMessage"
+import type { Ticket } from "@/hooks/useTicketHistory"
 
 export function HistoryPopover() {
   const { tickets, loading, error } = useTicketHistory();
@@ -28,8 +28,8 @@ export function HistoryPopover() {
             </div>
           )}
           
-          {!loading && tickets.length === 0 && (
-            <p className="text-sm text-muted-foreground">No history found.</p>
+          {!loading && !error && tickets.length === 0 && (
+            <p className="text-sm text-muted-foreground">No conversation history yet.</p>
           )}
           
           {tickets.map((ticket: Ticket) => (
@@ -43,5 +43,5 @@ export function HistoryPopover() {
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

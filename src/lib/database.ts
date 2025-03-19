@@ -1,20 +1,6 @@
-// Database utility for fetching ticket history from the backend
-import { Ticket } from '../hooks/useTicketHistory';
+import { Article } from "@/types/article"
+import { Ticket } from "@/hooks/useTicketHistory"
 
-// Add the missing Article interface
-export interface Article {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  timestamp: Date;
-}
-
-/**
- * Fetches ticket history from the backend API
- * 
- * @returns Promise<Ticket[]> Array of ticket history items
- */
 export async function getTicketsFromDatabase(): Promise<Ticket[]> {
   try {
     // Fetch tickets from the backend API

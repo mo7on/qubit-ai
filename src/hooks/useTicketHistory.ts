@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// Define the Ticket interface directly in this file to avoid dependency on mock data
 export interface Ticket {
   id: string;
   timestamp: Date;
@@ -9,7 +8,7 @@ export interface Ticket {
 
 export function useTicketHistory() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,7 +38,8 @@ export function useTicketHistory() {
       }
     }
 
-    fetchTickets();
+    // We're not loading mock data anymore, so we can set loading to false initially
+    setLoading(false);
   }, []);
 
   return { tickets, loading, error };
