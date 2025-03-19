@@ -9,7 +9,6 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 interface Message {
   role: string;
   content: string;
-  sources?: { url: string; description: string }[];
 }
 
 interface MessageListProps {
@@ -66,23 +65,7 @@ export function MessageList({ messages, isLoading, conversationStarted }: Messag
                   style={{ animationDelay: `${index * 100 + 100}ms` }}
                 >
                   <MarkdownRenderer content={message.content} />
-                  {message.sources && (
-                    <div className="mt-4 space-y-2">
-                      {message.sources.map((source, idx) => (
-                        <a
-                          key={idx}
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-2 bg-accent/30 rounded-lg hover:bg-accent/50 transition-all duration-200 hover:translate-y-[-2px] animate-in fade-in-50 duration-300"
-                          style={{ animationDelay: `${idx * 100 + 200}ms` }}
-                        >
-                          <p className="text-sm font-medium">{source.description}</p>
-                          <p className="text-xs text-muted-foreground truncate">{source.url}</p>
-                        </a>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
               </div>
             ))}
