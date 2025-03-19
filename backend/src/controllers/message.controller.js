@@ -1,5 +1,6 @@
 const MessageService = require('../services/message.service');
 const DatabaseService = require('../services/database.service');
+const DomainDetectionService = require('../services/domain-detection.service');
 
 /**
  * Controller for message endpoints
@@ -8,7 +9,24 @@ exports.processMessage = async (req, res) => {
   try {
     const { message } = req.body;
     
-    // Process message through Gemini AI
+    if (!message) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No message content provided'
+      });
+    }
+    
+    // First check if message is within IT Support domain
+    const isITSupport = DomainDetectionService.isITSupportDomain(message);
+    
+    if (!isITSupport) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Your question does not belong to our field of work. We only handle IT Support related queries.'
+      });
+    }
+    
+    // Process message through Gemini AI only if it's in the IT Support domain
     const result = await MessageService.processMessage(message);
     
     if (!result.success) {
@@ -41,10 +59,52 @@ exports.createMessage = async (req, res) => {
     const { conversationId } = req.params;
     const { content, role } = req.body;
     
-    // Create new user message
+    // For user messages, check domain before processing
+    if (role === 'user' || !role) {
+      // Check if message is within IT Support domain
+      const isITSupport = DomainDetectionService.isITSupportDomain(content);
+      
+      if (!isITSupport) {
+        // Create user message with updated fields
+        const userMessage = await DatabaseService.message.create({
+          conversation_id: conversationId,
+          message_content: content, // Updated field name
+          role: 'user',
+          created_at: new Date()
+        });
+        
+        // Create rejection message with updated fields
+        const rejectionMessage = 'Your question does not belong to our field of work. We only handle IT Support related queries.';
+        const assistantMessage = await DatabaseService.message.create({
+          conversation_id: conversationId,
+          message_content: rejectionMessage, // Updated field name
+          role: 'assistant',
+          metadata: {
+            isITSupport: false
+          },
+          created_at: new Date()
+        });
+        
+        // Update conversation timestamp
+        await DatabaseService.conversation.update(conversationId, {
+          updated_at: new Date()
+        });
+        
+        return res.status(201).json({
+          status: 'success',
+          data: {
+            userMessage,
+            assistantMessage,
+            isITSupport: false
+          }
+        });
+      }
+    }
+    
+    // Create new user message with updated fields
     const userMessage = await DatabaseService.message.create({
       conversation_id: conversationId,
-      content,
+      message_content: content, // Updated field name
       role: role || 'user',
       created_at: new Date()
     });
@@ -54,11 +114,14 @@ exports.createMessage = async (req, res) => {
       // Process message through Gemini AI
       const result = await MessageService.processMessage(content);
       
-      // Create AI response message
+      // Create AI response message with updated fields
       const assistantMessage = await DatabaseService.message.create({
         conversation_id: conversationId,
-        content: result.response,
+        message_content: result.response, // Updated field name
         role: 'assistant',
+        metadata: {
+          isITSupport: true
+        },
         created_at: new Date()
       });
       
@@ -71,7 +134,8 @@ exports.createMessage = async (req, res) => {
         status: 'success',
         data: {
           userMessage,
-          assistantMessage
+          assistantMessage,
+          isITSupport: true
         }
       });
     }

@@ -56,25 +56,32 @@ exports.createConversation = async (req, res) => {
   }
 };
 
-exports.getMessages = async (req, res) => {
+exports.getConversationMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
     
-    // Get messages for conversation
     const messages = await DatabaseService.message.getByConversationId(conversationId);
+    
+    // Map messages to client format if needed
+    const formattedMessages = messages.map(message => ({
+      id: message.id,
+      content: message.message_content, // Updated field name
+      role: message.role,
+      timestamp: message.created_at
+    }));
     
     res.status(200).json({
       status: 'success',
       results: messages.length,
       data: {
-        messages
+        messages: formattedMessages
       }
     });
   } catch (error) {
-    console.error('Error getting messages:', error);
+    console.error('Error getting conversation messages:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Error retrieving messages'
+      message: 'Error retrieving conversation messages'
     });
   }
 };

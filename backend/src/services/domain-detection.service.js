@@ -185,3 +185,60 @@ const domainDetectionService = new DomainDetectionService();
 module.exports = DomainDetectionService;
 module.exports.default = DomainDetectionService;
 module.exports.instance = domainDetectionService;
+
+/**
+ * Service for detecting if queries are within the specified domain
+ */
+class DomainDetectionService {
+  /**
+   * Check if a query is related to the specified domain
+   * @param {string} query - User query
+   * @returns {boolean} - Whether the query is within the domain
+   */
+  static isInDomain(query) {
+    if (!query || typeof query !== 'string') {
+      return false;
+    }
+
+    // Domain-specific keywords
+    const domainKeywords = [
+      // Add your domain-specific keywords here
+      'computer', 'software', 'hardware', 'network', 'server',
+      'database', 'programming', 'code', 'development', 'IT',
+      'technology', 'system', 'application', 'website', 'internet'
+    ];
+    
+    // Convert query to lowercase for case-insensitive matching
+    const lowercaseQuery = query.toLowerCase();
+    
+    // Check if any domain keyword is in the query
+    const containsDomainKeyword = domainKeywords.some(keyword => 
+      lowercaseQuery.includes(keyword.toLowerCase())
+    );
+    
+    if (containsDomainKeyword) {
+      return true;
+    }
+    
+    // Domain-specific question patterns
+    const domainQuestionPatterns = [
+      /how (do|can|to|would|should) .* (develop|program|code|implement|design)/i,
+      /what (is|are|means) .* (algorithm|function|method|api|framework)/i,
+      /why (is|does|won't) .* (code|program|application|system|website)/i
+    ];
+    
+    return domainQuestionPatterns.some(pattern => pattern.test(lowercaseQuery));
+  }
+
+  /**
+   * Get a professional response for out-of-domain queries
+   * @returns {string} - Response message
+   */
+  static getOutOfDomainResponse() {
+    return `I apologize, but your question appears to be outside the domain I'm designed to assist with. I specialize in technology and IT-related topics.
+
+If you have any questions related to technology, programming, or IT support, I'd be happy to help.`;
+  }
+}
+
+module.exports = DomainDetectionService;

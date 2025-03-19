@@ -187,13 +187,15 @@ class DatabaseService {
     
     // Create new message
     create: async (messageData) => {
-      const { data, error } = await supabase
+      // Updated to use message_content instead of content
+      return await supabase
         .from('message')
         .insert(messageData)
-        .select();
-      
-      if (error) throw error;
-      return data[0];
+        .select()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data[0];
+        });
     },
     
     // Get message by ID
@@ -329,3 +331,69 @@ class DatabaseService {
 }
 
 module.exports = DatabaseService;
+
+// Add article operations to the DatabaseService
+article: {
+  create: async (articleData) => {
+    return await supabase
+      .from('articles')
+      .insert(articleData)
+      .select()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return data[0];
+      });
+  },
+  
+  getAll: async ({ page = 1, limit = 10, tag = null }) => {
+    let query = supabase
+      .from('articles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+    
+    if (tag) {
+      query = query.contains('tags', [tag]);
+    }
+    
+    return await query.then(({ data, error }) => {
+      if (error) throw error;
+      return data;
+    });
+  },
+  
+  getById: async (id) => {
+    return await supabase
+      .from('articles')
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return data;
+      });
+  },
+  
+  update: async (id, updateData) => {
+    return await supabase
+      .from('articles')
+      .update({ ...updateData, updated_at: new Date() })
+      .eq('id', id)
+      .select()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return data[0];
+      });
+  },
+  
+  delete: async (id) => {
+    return await supabase
+      .from('articles')
+      .delete()
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) throw error;
+        return true;
+      });
+  }
+},
