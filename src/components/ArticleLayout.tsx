@@ -4,6 +4,7 @@ import * as React from "react"
 import { ChevronLeft } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Article } from "@/types/article"
+import { MarkdownRenderer } from "./MarkdownRenderer"
 
 interface ArticleLayoutProps {
   articles: Article[]
@@ -41,8 +42,8 @@ export function ArticleLayout({ articles, expandedArticle, onArticleClick, onBac
                   </div>
                 </div>
                 <p className="text-muted-foreground">{article.description}</p>
-                <div className="mt-6 space-y-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 rounded-lg">
-                  <p className="whitespace-pre-wrap">{article.content}</p>
+                <div className="mt-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-6 rounded-lg">
+                  <MarkdownRenderer content={article.content} />
                 </div>
               </div>
             )

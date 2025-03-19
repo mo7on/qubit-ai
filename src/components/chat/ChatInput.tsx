@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Send, Plus, X, Paperclip, History } from "lucide-react"
+import { useTheme } from "next-themes"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { mockTickets } from "@/lib/mock-tickets"
 import { mockArticles } from "@/data/mock-articles"
@@ -11,34 +12,46 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { ArticleSuggestions } from "@/components/chat/ArticleSuggestions"
+import { useChatContext } from "./ChatContext"
 
 interface ChatInputProps {
-  text: string;
-  setText: (text: string) => void;
-  handleSendMessage: () => void;
-  isLoading: boolean;
   handleFileUploadClick: () => void;
-  matchingArticles: typeof mockArticles;
   handleArticleSuggestionClick: (articleId: string) => void;
   isArticlesPage: boolean;
 }
 
 export function ChatInput({
-  text,
-  setText,
-  handleSendMessage,
-  isLoading,
   handleFileUploadClick,
-  matchingArticles,
   handleArticleSuggestionClick,
   isArticlesPage
 }: ChatInputProps) {
-  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setText(e.target.value);
-  }, [setText]);
-
-  // Add focus state for enhanced input experience
+  const { theme } = useTheme();
+  const { 
+    isLoading, 
+    matchingArticles,
+    setMatchingArticles,
+    handleSendMessage
+  } = useChatContext();
+  
+  const [text, setText] = React.useState<string>("");
   const [isFocused, setIsFocused] = React.useState(false);
+  
+  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setText(value);
+    
+    // Update article suggestions based on input text
+    if (value.length <= 2) {
+      setMatchingArticles([]);
+      return;
+    }
+    
+    const matches = mockArticles.filter(article => 
+      article.title.toLowerCase().includes(value.toLowerCase()) ||
+      article.description.toLowerCase().includes(value.toLowerCase())
+    );
+    setMatchingArticles(matches);
+  }, [setMatchingArticles]);
 
   return (
     <div 
@@ -55,7 +68,7 @@ export function ChatInput({
               aria-label="Qubit AI icon"
             >
               <img
-                src="/qubit-ai.svg"
+                src={theme === "light" ? "/qubit-ai-dark.svg" : "/qubit-ai.svg"}
                 alt="Qubit AI"
                 width={20}
                 height={20}
@@ -130,7 +143,10 @@ export function ChatInput({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSendMessage();
+                if (text.trim()) {
+                  handleSendMessage(text);
+                  setText("");
+                }
               }
             }}
             placeholder="Type your message here..."
@@ -151,7 +167,12 @@ export function ChatInput({
           )}
           
           <button
-            onClick={handleSendMessage}
+            onClick={() => {
+              if (text.trim()) {
+                handleSendMessage(text);
+                setText("");
+              }
+            }}
             disabled={!text || isLoading}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-accent rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:scale-110"
             aria-label="Send message"
