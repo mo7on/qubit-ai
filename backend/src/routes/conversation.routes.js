@@ -4,16 +4,14 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
+// Protected routes
 router.use(authMiddleware.protect);
 
-// Conversation routes
 router.get('/', conversationController.getConversations);
 router.post('/', conversationController.createConversation);
-
-// Message routes
 router.get('/:conversationId/messages', conversationController.getMessages);
 router.post('/:conversationId/messages', conversationController.createMessage);
+router.get('/:conversationId/status', conversationController.checkConversationStatus);
 
 // Two-step process routes
 router.post('/sources', conversationController.getSources);

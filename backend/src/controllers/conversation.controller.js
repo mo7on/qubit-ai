@@ -1,6 +1,7 @@
 const DatabaseService = require('../services/database.service');
 const AIIntegrationService = require('../services/ai-integration.service');
 const DomainDetectionService = require('../services/domain-detection.service');
+const ConversationManagerService = require('../services/conversation-manager.service');
 
 /**
  * Conversation controller
@@ -33,13 +34,17 @@ exports.createConversation = async (req, res) => {
     const userId = req.user.id;
     const { title } = req.body;
     
-    // Create new conversation
+    // Create new conversation with active status
     const conversation = await DatabaseService.conversation.create({
       user_id: userId,
       title: title || 'New Conversation',
+      status: 'active',
       created_at: new Date(),
       updated_at: new Date()
     });
+    
+    // Add to history immediately
+    await ConversationManagerService.addToHistory(userId, conversation.id);
     
     res.status(201).json({
       status: 'success',
@@ -288,3 +293,28 @@ exports.getMessageSources = async (req, res) => {
 };
 
 // Add other controller methods as needed
+
+// Add a new endpoint to check conversation status
+exports.checkConversationStatus = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    
+    const isClosed = await ConversationManagerService.isConversationClosed(conversationId);
+    const atLimit = await ConversationManagerService.isConversationAtLimit(conversationId);
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        isClosed,
+        atLimit,
+        canSendMessages: !isClosed && !atLimit
+      }
+    });
+  } catch (error) {
+    console.error('Error checking conversation status:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error checking conversation status'
+    });
+  }
+};

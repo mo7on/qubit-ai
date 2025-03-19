@@ -8,11 +8,9 @@ module.exports = {
     topP: 0.8,
     maxOutputTokens: 2048,
   },
-  tavily: {
-    maxResults: 5,
-    searchDepth: "advanced",
-    includeDomains: [],
-    excludeDomains: []
+  conversation: {
+    maxResponses: 10, // Maximum number of AI responses per conversation
+    autoClose: true   // Automatically close conversations when limit is reached
   },
   cache: {
     ttl: 3600000, // 1 hour in milliseconds
