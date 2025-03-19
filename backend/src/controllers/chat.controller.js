@@ -1,19 +1,20 @@
-const ITSupportService = require('../services/it-support.service');
+const AIIntegrationService = require('../services/ai-integration.service');
 const DatabaseService = require('../services/database.service');
 const ConversationManagerService = require('../services/conversation-manager.service');
+const DeviceDetectionService = require('../services/domain-detection.service');
 
 /**
  * Controller for chat endpoints
  */
 exports.processChat = async (req, res) => {
   try {
-    const { query, conversationId, deviceBrand } = req.body;
+    const { message, conversationId } = req.body;
     const userId = req.user.id;
     
-    if (!query) {
+    if (!message) {
       return res.status(400).json({
         status: 'error',
-        message: 'No query provided'
+        message: 'No message content provided'
       });
     }
     
@@ -34,25 +35,41 @@ exports.processChat = async (req, res) => {
       });
     }
     
-    // Process the query
-    const result = await ITSupportService.processQuery(query, { deviceBrand });
+    // Extract device information
+    const { deviceBrand } = DeviceDetectionService.analyzeMessage(message);
+    
+    // Get sources
+    const sourcesResult = await AIIntegrationService.getSources(message);
+    
+    // Generate response
+    const responseResult = await AIIntegrationService.generateResponse(
+      message,
+      sourcesResult.sources || [],
+      { deviceBrand }
+    );
+    
+    if (!responseResult.success) {
+      return res.status(500).json({
+        status: 'error',
+        message: responseResult.response || 'Error processing your message'
+      });
+    }
     
     // Store messages in database
     const userMessage = await DatabaseService.message.create({
       conversation_id: conversationId,
-      message_content: query,
+      message_content: message,
       role: 'user',
       created_at: new Date()
     });
     
     const assistantMessage = await DatabaseService.message.create({
       conversation_id: conversationId,
-      message_content: result.response,
+      message_content: responseResult.response,
       role: 'assistant',
       metadata: {
-        isITRelated: result.isITRelated,
-        category: result.category,
-        sources: result.sources
+        sources: sourcesResult.sources || [],
+        deviceBrand
       },
       created_at: new Date()
     });
@@ -76,9 +93,8 @@ exports.processChat = async (req, res) => {
       data: {
         userMessage,
         assistantMessage,
-        response: result.response,
-        isITRelated: result.isITRelated,
-        sources: result.sources,
+        response: responseResult.response,
+        sources: sourcesResult.sources || [],
         limitReached: atLimit,
         newConversation: newConversation
       }

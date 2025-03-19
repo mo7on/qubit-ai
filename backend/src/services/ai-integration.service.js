@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const DomainDetectionService = require('./domain-detection.service');
+const DeviceDetectionService = require('./domain-detection.service');
 
 /**
  * Service for AI integration with Gemini
@@ -13,26 +13,14 @@ class AIIntegrationService {
   /**
    * Get sources for a query using Gemini AI
    * @param {string} query - User query
-   * @returns {Promise<Object>} - Sources and domain check result
+   * @returns {Promise<Object>} - Sources result
    */
   async getSources(query) {
     try {
-      // Check if query is IT related
-      const isITRelated = DomainDetectionService.isITSupportDomain(query);
-      
-      if (!isITRelated) {
-        return {
-          success: false,
-          isITRelated: false,
-          message: 'This system is only for IT Support-related inquiries.',
-          sources: []
-        };
-      }
-      
       // Generate relevant sources using Gemini AI
       const prompt = `
-        You are an expert IT support specialist. For the following IT support query, 
-        generate 3-5 relevant sources of information that would help answer this question.
+        For the following query, generate 3-5 relevant sources of information 
+        that would help answer this question.
         
         Query: "${query}"
         
@@ -55,7 +43,6 @@ class AIIntegrationService {
         
         return {
           success: true,
-          isITRelated: true,
           sources
         };
       }
@@ -65,7 +52,6 @@ class AIIntegrationService {
       console.error('Error getting sources:', error);
       return {
         success: false,
-        isITRelated: true,
         message: 'Error retrieving sources',
         sources: []
       };
@@ -94,7 +80,7 @@ class AIIntegrationService {
       
       // Generate response with Gemini AI
       const prompt = `
-        You are an expert IT support specialist providing help to a user.
+        You are a helpful AI assistant providing information to a user.
         
         User Query: "${query}"
         
@@ -103,7 +89,7 @@ class AIIntegrationService {
         ${sourcesText}
         
         Based on the query and sources, provide a detailed, helpful response that:
-        1. Directly addresses the user's IT support question
+        1. Directly addresses the user's question
         2. Provides step-by-step instructions when applicable
         3. Includes relevant technical details
         4. Is formatted with clear headings and bullet points
