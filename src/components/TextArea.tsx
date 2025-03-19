@@ -7,7 +7,7 @@ import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { mockTickets } from "@/lib/mock-tickets"
-import { mockArticles } from "@/data/mock-articles"
+import { mockArticles, syncArticlesWithBackend } from "@/data/mock-articles"
 import { IntroTour } from "@/components/IntroTour"
 import { useTheme } from "next-themes"
 import {
@@ -23,6 +23,7 @@ import { ImagePromptModal } from "@/components/chat/ImagePromptModal"
 import { useChatContext } from "@/components/chat/ChatContext"
 
 /** Interface for upload options in the text area component */
+// Update the component props to include isMobile
 interface UploadOption {
   value: "document" | "photo"
   label: string
@@ -47,10 +48,11 @@ interface TicketHistoryItem {
  * - File upload options
  * - History view (on articles page)
  * - Responsive design
+ * - Mobile-optimized positioning
  * 
  * @component
  */
-export function TextArea() {
+export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
   // State management for user input and UI elements
   const [text, setText] = React.useState<string>("");
   const [showHistory, setShowHistory] = React.useState(false);
@@ -128,9 +130,9 @@ export function TextArea() {
     );
     setMatchingArticles(matches);
   }, [setText, setMatchingArticles]);
-
-  // Add article suggestion click handler
-  const handleArticleSuggestionClick = React.useCallback((articleId: string) => {
+  
+    // Add article suggestion click handler
+    const handleArticleSuggestionClick = React.useCallback((articleId: string) => {
     setMatchingArticles([]);
     
     // Navigate to the article page with the article ID
@@ -265,17 +267,25 @@ export function TextArea() {
           />
           
           <div 
-            className={`w-full flex flex-col h-screen ${!conversationStarted ? 'justify-center' : 'justify-between'}`}
+            className={`w-full flex flex-col h-screen ${!conversationStarted && !isMobile ? 'justify-center' : 'justify-between'}`}
             role="region"
             aria-label="Chat interface"
           >
-            <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted ? 'h-full justify-between' : ''}`}>
+            <div className={`flex flex-col items-center w-full max-w-3xl mx-auto p-4 md:p-8 ${conversationStarted || isMobile ? 'h-full justify-between' : ''}`}>
               
-              {/* Welcome headers - only shown when conversation hasn't started */}
-              {!conversationStarted && (
+              {/* Welcome headers - only shown when conversation hasn't started and not on mobile */}
+              {!conversationStarted && !isMobile && (
                 <div className="text-center mb-8 animate-in fade-in-0 slide-in-from-bottom-3 duration-500">
                   <h1 className="text-4xl font-bold mb-2">Welcome to Qub-IT</h1>
                   <h2 className="text-xl text-muted-foreground">Your AI-powered IT support assistant</h2>
+                </div>
+              )}
+              
+              {/* Welcome headers - mobile version with smaller text */}
+              {!conversationStarted && isMobile && (
+                <div className="text-center mb-4 mt-12 animate-in fade-in-0 slide-in-from-bottom-3 duration-500">
+                  <h1 className="text-3xl font-bold mb-1">Welcome to Qub-IT</h1>
+                  <h2 className="text-lg text-muted-foreground">Your AI-powered IT support assistant</h2>
                 </div>
               )}
               
@@ -286,7 +296,7 @@ export function TextArea() {
                   role="log"
                   aria-label="Conversation history"
                 >
-                  <ScrollArea className="h-[calc(100vh-160px)] w-full">
+                  <ScrollArea className={`${isMobile ? 'h-[calc(100vh-180px)]' : 'h-[calc(100vh-160px)]'} w-full`}>
                     <div className="p-4 md:p-6">
                       <div className="space-y-6 w-full max-w-3xl mx-auto">
                         {messages.map((message, index) => (
@@ -371,7 +381,7 @@ export function TextArea() {
               
               {/* Input Form */}
               <div 
-                className={`w-full p-4 md:p-6 rounded-2xl bg-background border border-input flex flex-col ${conversationStarted ? 'sticky bottom-0 mt-auto' : ''}`}
+                className={`w-full p-4 md:p-6 rounded-2xl bg-background border border-input flex flex-col ${conversationStarted || isMobile ? 'sticky bottom-0 mt-auto' : ''}`}
                 role="form"
                 aria-label="Message input form"
               >

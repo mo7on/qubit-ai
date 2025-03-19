@@ -8,9 +8,23 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 interface AIMessageProps {
   content: string;
   isLoading?: boolean;
+  image?: string;
 }
 
-export function AIMessage({ content, isLoading = false }: AIMessageProps) {
+export function AIMessage({ content, isLoading = false, image }: AIMessageProps) {
+  // Process content to replace placeholder with actual description
+  const processedContent = React.useMemo(() => {
+    // Check if content contains the placeholder pattern
+    if (content.includes("[image description]")) {
+      // Replace placeholder with a more meaningful message
+      return content.replace(
+        "[image description]", 
+        "the image you've uploaded"
+      );
+    }
+    return content;
+  }, [content]);
+
   return (
     <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-3 duration-300">
       <div className="flex-shrink-0">
@@ -35,7 +49,22 @@ export function AIMessage({ content, isLoading = false }: AIMessageProps) {
           </div>
         ) : (
           <>
-            <MarkdownRenderer content={content} />
+            {/* Display image if provided */}
+            {image && (
+              <div className="mb-3">
+                <div className="relative rounded-lg overflow-hidden inline-block">
+                  <Image 
+                    src={image}
+                    alt="Uploaded image"
+                    width={150}
+                    height={150}
+                    className="object-cover rounded-lg border border-border"
+                    style={{ maxHeight: '150px', maxWidth: '150px' }}
+                  />
+                </div>
+              </div>
+            )}
+            <MarkdownRenderer content={processedContent} />
           </>
         )}
       </div>

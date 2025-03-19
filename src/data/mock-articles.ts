@@ -1,5 +1,7 @@
 import { Article } from "@/types/article"
+import { getArticlesFromDatabase } from "@/lib/database"
 
+// Initial mock articles as fallback
 export const mockArticles: Article[] = [
   {
     id: "1",
@@ -208,3 +210,38 @@ Comprehensive Solutions:
     imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23800080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 6 2 18 2 18 9'%3E%3C/polyline%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'%3E%3C/path%3E%3Crect x='6' y='14' width='12' height='8'%3E%3C/rect%3E%3C/svg%3E"
   }
 ]
+
+// Function to sync articles with backend
+export async function syncArticlesWithBackend(): Promise<Article[]> {
+  try {
+    const backendArticles = await getArticlesFromDatabase();
+    
+    if (backendArticles && backendArticles.length > 0) {
+      // Create a map of existing articles by ID for quick lookup
+      const existingArticlesMap = new Map(
+        mockArticles.map(article => [article.id, article])
+      );
+      
+      // Add new articles from backend that don't exist in mockArticles
+      backendArticles.forEach(article => {
+        if (!existingArticlesMap.has(article.id)) {
+          mockArticles.push(article);
+        }
+      });
+      
+      console.log(`Synced ${backendArticles.length} articles from backend`);
+    }
+    
+    return mockArticles;
+  } catch (error) {
+    console.error('Error syncing articles with backend:', error);
+    return mockArticles; // Return existing mock articles on error
+  }
+}
+
+// Initialize sync on module load
+if (typeof window !== 'undefined') {
+  syncArticlesWithBackend().catch(err => 
+    console.error('Failed to initialize article sync:', err)
+  );
+}
