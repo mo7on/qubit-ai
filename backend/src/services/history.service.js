@@ -1,5 +1,10 @@
-const supabase = require('../config/supabase');
-const { handleSupabaseError } = require('../utils/supabase-helpers');
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
 class HistoryService {
   static async logActivity(data) {
