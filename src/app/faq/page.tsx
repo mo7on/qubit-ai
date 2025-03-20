@@ -182,7 +182,7 @@ export default function FAQPage() {
           
           <div className="mt-12 pt-6 border-t border-border">
             <p className="text-sm text-muted-foreground">
-              Can't find what you're looking for? Contact us at <a href="mailto:nourhazzouri55@gmail.com" className="text-primary hover:underline">nourhazzouri55@gmail.com</a>.
+              Cannot find what you are looking for? Contact us at <a href="mailto:nourhazzouri55@gmail.com" className="text-primary hover:underline">nourhazzouri55@gmail.com</a>.
             </p>
           </div>
         </div>

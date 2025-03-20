@@ -1,5 +1,9 @@
 const { Pool } = require('pg');
-const dotenv = require('dotenv');
+// Change:
+// const mongoose = require('mongoose');
+// const dotenv = require('dotenv');
+// To:
+import dotenv from 'dotenv';
 
 dotenv.config();
 

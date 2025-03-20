@@ -23,7 +23,7 @@ export default function TermsOfServicePage() {
           <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
           <p className="text-muted-foreground mb-8"><strong>Effective Date:</strong> 19/03/2025</p>
           
-          <p>Welcome to Qubit AI! These Terms of Service ("Terms") govern your access and use of our
+          <p>Welcome to Qubit AI! These Terms of Service Terms govern your access and use of our
           website, application, and services. By using Qubit AI, you agree to comply with these Terms. If
           you do not agree, please do not use our services.</p>
           
@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
             <li>Use our services to engage in illegal, harmful, or unethical activities.</li>
             <li>Interfere with the security or integrity of the platform.</li>
             <li>Attempt to reverse engineer or exploit our AI model, APIs, or other features.</li>
-            <li>Misrepresent yourself or use another person's credentials.</li>
+            <li>Misrepresent yourself or use another persons credentials.</li>
           </ul>
           
           <h2 className="text-2xl font-semibold mt-8 mb-4">3. Account Registration & Security</h2>
@@ -70,7 +70,7 @@ export default function TermsOfServicePage() {
           
           <h2 className="text-2xl font-semibold mt-8 mb-4">7. Limitation of Liability</h2>
           <ul className="list-disc pl-6 mb-4">
-            <li>Qubit AI is provided "as is" without warranties of any kind.</li>
+            <li>Qubit AI is provide as is without warranties of any kind.</li>
             <li>We are not responsible for any direct, indirect, or incidental damages arising from the use of
             our platform.</li>
             <li>We do not guarantee uninterrupted access to our services.</li>

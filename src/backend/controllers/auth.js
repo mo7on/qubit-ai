@@ -1,4 +1,8 @@
-const User = require('../models/User');
+// Similarly, replace any require() statements with import statements
+// For example:
+// const User = require('../models/User');
+// To:
+import User from '../models/User';
 const asyncHandler = require('../middleware/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
 
