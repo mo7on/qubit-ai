@@ -104,13 +104,28 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages(prev => [...prev, userMessage]);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the actual image analysis API endpoint
+      const response = await fetch('/api/gemini/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          imageData: imageData.split(',')[1], // Remove the data:image/jpeg;base64, prefix
+          prompt: prompt || 'Analyze this image'
+        }),
+      });
       
-      // Add AI response
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze image with Gemini');
+      }
+      
+      // Add AI response with the actual API response
       const aiResponse = {
         role: 'assistant',
-        content: `I've analyzed the image you provided. ${prompt ? `Regarding your question "${prompt}": ` : ''}This appears to be [image description]. Let me know if you need more specific information about it.`
+        content: data.data
       };
       
       setMessages(prev => [...prev, aiResponse]);

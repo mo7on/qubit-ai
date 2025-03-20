@@ -1,6 +1,6 @@
 # Qubit AI - Smart Technical Assistant 🤖
 
-![Project Banner](https://via.placeholder.com/1200x600.png?text=Qubit+AI+-+Real-time+Technical+Problem+Solving)
+![Project Banner](/public/banner.png)
 
 A Next.js-powered application providing AI-assisted technical troubleshooting with contextual knowledge base integration.
 
