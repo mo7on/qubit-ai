@@ -1,15 +1,12 @@
-// Similarly, replace any require() statements with import statements
-// For example:
-// const User = require('../models/User');
-// To:
 import User from '../models/User';
-const asyncHandler = require('../middleware/asyncHandler');
-const ErrorResponse = require('../utils/errorResponse');
+import asyncHandler from '../middleware/asyncHandler';
+import ErrorResponse from '../utils/errorResponse';
 
+// Also need to change the exports style to ES modules
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
-exports.register = asyncHandler(async (req, res, next) => {
+export const register = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
   // Create user
@@ -25,7 +22,7 @@ exports.register = asyncHandler(async (req, res, next) => {
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
-exports.login = asyncHandler(async (req, res, next) => {
+export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
   // Validate email & password
@@ -53,7 +50,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
-exports.getMe = asyncHandler(async (req, res, next) => {
+export const getMe = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
   res.status(200).json({
     success: true,
@@ -64,7 +61,7 @@ exports.getMe = asyncHandler(async (req, res, next) => {
 // @desc    Log user out / clear cookie
 // @route   GET /api/auth/logout
 // @access  Private
-exports.logout = asyncHandler(async (req, res, next) => {
+export const logout = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'User logged out successfully',
