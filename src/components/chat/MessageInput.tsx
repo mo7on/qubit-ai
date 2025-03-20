@@ -1,20 +1,21 @@
 "use client"
 
 import * as React from "react"
-import { Camera, Send, Paperclip, History, Plus, X } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { mockTickets } from "@/lib/mock-tickets"
+import { Send } from "lucide-react"
 import { mockArticles } from "@/data/mock-articles"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ImageUploadModal } from "./ImageUploadModal"
-import { CameraModal } from "./CameraModal"
 import { ArticleSuggestions } from "./ArticleSuggestions"
-import { UploadOptions } from "./UploadOptions"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { MessageComposer } from "./MessageComposer"
+import { AttachmentHandler } from "./AttachmentHandler"
+import { CameraModal } from "./CameraModal"
+import { ImageUploadModal } from "./ImageUploadModal"
+
+interface Ticket {
+  id: string;
+  title: string;
+}
+
+const mockTickets: Ticket[] = [];  // Define empty tickets array
 
 interface MessageInputProps {
   onSendMessage: (text: string) => void;
@@ -32,7 +33,7 @@ export function MessageInput({ onSendMessage, isLoading, conversationStarted, is
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setText(value);
     
@@ -105,9 +106,13 @@ export function MessageInput({ onSendMessage, isLoading, conversationStarted, is
               />
             </button>
             
-            <UploadOptions
-              onFileUpload={handleFileUploadClick}
-              tickets={mockTickets}
+            <AttachmentHandler
+              onImageUpload={(image, prompt) => {
+                if (prompt) {
+                  onSendMessage(prompt);
+                }
+              }}
+              isArticlesPage={isArticlesPage}
             />
           </>
         )}
@@ -116,7 +121,7 @@ export function MessageInput({ onSendMessage, isLoading, conversationStarted, is
           <input
             type="text"
             value={text}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTextChange(e as unknown as React.ChangeEvent<HTMLTextAreaElement>)}
+            onChange={handleTextChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -131,7 +136,7 @@ export function MessageInput({ onSendMessage, isLoading, conversationStarted, is
           />
 
           <ArticleSuggestions
-            matchingArticles={matchingArticles}
+            articles={matchingArticles}
             onArticleClick={() => {}}
           />
 
