@@ -108,9 +108,13 @@ export function MessageInput({ onSendMessage, isLoading, conversationStarted, is
             
             <AttachmentHandler
               onImageUpload={(image, prompt) => {
-                if (prompt) {
-                  onSendMessage(prompt);
-                }
+                // Create a message with both the prompt text and the image
+                // This ensures the image data is passed to the chat context
+                const messageWithImage = prompt || 'Analyze this image';
+                onSendMessage(messageWithImage);
+                
+                // Store the image in localStorage for the API to use
+                localStorage.setItem('pendingImageData', image);
               }}
               isArticlesPage={isArticlesPage}
             />

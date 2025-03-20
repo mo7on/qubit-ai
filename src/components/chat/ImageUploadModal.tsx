@@ -80,14 +80,36 @@ export function ImageUploadModal({ isOpen, image, onClose, onSubmit }: ImageUplo
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  onSubmit(imagePrompt);
+                  
+                  try {
+                    // Try to use the ChatContext directly to handle image analysis
+                    const { useChatContext } = require('./ChatContext');
+                    const { handleImageAnalysis } = useChatContext();
+                    // Call handleImageAnalysis with both the image and prompt
+                    handleImageAnalysis(image, imagePrompt || 'Analyze this image');
+                  } catch (error) {
+                    console.error('Error using chat context:', error);
+                    // Fallback to the provided onSubmit function
+                    onSubmit(imagePrompt || 'Analyze this image');
+                  }
                 }
               }}
               placeholder="Describe what you want to know about this image..."
               className="w-full px-4 py-2 rounded-lg bg-background border border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <button
-              onClick={() => onSubmit(imagePrompt)}
+              onClick={() => {
+                try {
+                  // Try to use the ChatContext directly to handle image analysis
+                  const { useChatContext } = require('./ChatContext');
+                  const { handleImageAnalysis } = useChatContext();
+                  handleImageAnalysis(image, imagePrompt || 'Analyze this image');
+                } catch (error) {
+                  console.error('Error using chat context:', error);
+                  // Fallback to the provided onSubmit function
+                  onSubmit(imagePrompt || 'Analyze this image');
+                }
+              }}
               disabled={!image}
               className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
