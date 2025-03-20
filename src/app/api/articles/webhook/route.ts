@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { Article } from '@/types/article';
 
 // This endpoint would be called by your backend when new articles are available
 export async function POST(request: NextRequest) {

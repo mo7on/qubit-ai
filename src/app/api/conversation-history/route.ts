@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export async function GET() {
   try {
@@ -37,17 +38,18 @@ export async function GET() {
         history: data.data.history || []
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in conversation history API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { status: 'error', message: error.message || 'Internal server error' },
+      { status: 'error', message: errorMessage },
       { status: 500 }
     );
   }
 }
 
 // Helper function to get backend token
-async function getBackendToken(supabase: any) {
+async function getBackendToken(supabase: SupabaseClient) {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.access_token || '';
 }

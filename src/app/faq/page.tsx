@@ -101,7 +101,7 @@ export default function FAQPage() {
               >
                 <div className="p-5 pt-0 text-muted-foreground">
                   <p>
-                    Yes! You can upload screenshots or photos of error messages or issues you're experiencing. Click the camera or upload button next to the chat input, and Qub-IT will analyze the image to provide more accurate assistance.
+                    Yes You can upload screenshots or photos of error messages or issues you are experiencing. Click the camera or upload button next to the chat input, and Qub-IT will analyze the image to provide more accurate assistance.
                   </p>
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function FAQPage() {
               >
                 <div className="p-5 pt-0 text-muted-foreground">
                   <p>
-                    You can access our Knowledge Base by clicking on the "Articles" or "Knowledge Base" option in the main navigation. The Knowledge Base contains comprehensive guides for common IT issues.
+                    You can access our Knowledge Base by clicking on the Articles or Knowledge Base option in the main navigation. The Knowledge Base contains comprehensive guides for common IT issues.
                   </p>
                 </div>
               </div>
