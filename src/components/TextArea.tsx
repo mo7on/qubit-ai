@@ -7,7 +7,6 @@ import Image from "next/image"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { mockArticles, syncArticlesWithBackend } from "@/data/mock-articles"
-import { IntroTour } from "@/components/IntroTour"
 import { useTheme } from "next-themes"
 import {
   Popover,
@@ -290,7 +289,6 @@ export function TextArea({ isMobile = false }: { isMobile?: boolean }) {
           className="relative flex flex-col min-h-screen"
           role="main"
         >
-          <IntroTour />
           
           {/* Modals */}
           <ImagePromptModal
