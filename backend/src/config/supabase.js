@@ -1,13 +1,29 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client
+// Initialize Supabase client with environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Create Supabase client
+// Validate environment variables
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing required Supabase environment variables');
+}
+
+// Create Supabase client with optimized configuration
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false
+  },
+  // Add request timeout to prevent hanging requests
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    timeout: 30000, // 30 seconds timeout for realtime subscriptions
+  },
+  // Add request timeout to prevent hanging requests
+  httpClient: {
+    timeout: 15000, // 15 seconds timeout for HTTP requests
   }
 });
 

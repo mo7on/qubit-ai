@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { handleSupabaseError } = require('../utils/supabase-helpers');
 
 /**
  * Authentication service using Supabase
