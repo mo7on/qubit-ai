@@ -33,7 +33,6 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
-[deployment]
-deploymentTarget = "autoscale"
-run = ["pnpm", "start"]
-build = ["pnpm", "run", "build"]
+[[ports]]
+localPort = 35711
+externalPort = 3000
