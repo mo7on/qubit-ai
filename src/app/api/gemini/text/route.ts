@@ -2,21 +2,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not defined in environment variables');
-      return NextResponse.json(
-        { error: 'API configuration error' },
-        { status: 500 }
-      );
-    }
-
     const { prompt } = await req.json();
 
     if (!prompt) {
