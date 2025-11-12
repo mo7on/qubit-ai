@@ -25,7 +25,6 @@ export async function POST(request: Request) {
     }
 
     // For image processing, use the multimodal model
-    // Using gemini-pro-vision instead of gemini-1.5-pro-vision
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     
     // Prepare the parts with both text and image
