@@ -22,11 +22,10 @@ A Next.js-based AI application that uses Google's Gemini API to provide intellig
 - **Deployment**: Replit Autoscale (stateless)
 
 ### Key Features
-- Text-based AI conversations using Gemini 2.5 Flash
+- Text-based AI conversations using Gemini 1.5 Pro
 - Image analysis using Gemini 2.0 Flash
 - Retry logic for API requests (3 retries with 1s delay)
 - Responsive UI built with Radix UI components
-- Enhanced error handling to prevent circular reference issues
 
 ### Environment Variables
 - `GEMINI_API_KEY`: Google Gemini API key for AI functionality (required)
