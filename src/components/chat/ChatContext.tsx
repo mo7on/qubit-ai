@@ -79,7 +79,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const assistantMessage = { role: 'assistant', content: data.data }
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error('Error sending message:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error sending message:', errorMessage)
       // Add a user-friendly error message to the chat
       setMessages(prev => [...prev, { 
         role: 'assistant', 
@@ -130,7 +131,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       
       setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
-      console.error('Error analyzing image:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error analyzing image:', errorMessage);
       // Add error message
       setMessages(prev => [...prev, {
         role: 'assistant',
